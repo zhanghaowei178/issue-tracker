@@ -1,0 +1,168 @@
+import React, { useMemo, useState } from 'react';
+import { Issue, TeamMemberStats, GlobalStats } from '../../types';
+import { Card } from '../common';
+
+interface RankingBoardProps {
+  issues: Issue[];
+  stats: GlobalStats;
+  onViewDetail: (assignee: string) => void;
+}
+
+type RankingType = 'resolved' | 'new' | 'total' | 'unresolved';
+
+export const RankingBoard: React.FC<RankingBoardProps> = ({ issues, stats: _stats, onViewDetail }) => {
+  const [rankingType, setRankingType] = useState<RankingType>('resolved');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
+  const teamStats = useMemo(() => {
+    const memberMap = new Map<string, TeamMemberStats>();
+    
+    issues.forEach(issue => {
+      const existing = memberMap.get(issue.assignee) || {
+        assignee: issue.assignee,
+        totalCount: 0,
+        resolvedCount: 0,
+        unresolvedCount: 0,
+        urgentCount: 0,
+        trackingCount: 0,
+        normalCount: 0
+      };
+      
+      existing.totalCount++;
+      if (issue.status === 'resolved') {
+        existing.resolvedCount++;
+      } else {
+        existing.unresolvedCount++;
+        if (issue.category === 'urgent') existing.urgentCount++;
+        if (issue.category === 'tracking') existing.trackingCount++;
+        if (issue.category === 'normal') existing.normalCount++;
+      }
+      
+      memberMap.set(issue.assignee, existing);
+    });
+    
+    return Array.from(memberMap.values());
+  }, [issues]);
+
+  const sortedTeamStats = useMemo(() => {
+    const sorted = [...teamStats].sort((a, b) => {
+      let compare = 0;
+      switch (rankingType) {
+        case 'resolved':
+          compare = a.resolvedCount - b.resolvedCount;
+          break;
+        case 'new':
+          compare = (a.totalCount - a.resolvedCount) - (b.totalCount - b.resolvedCount);
+          break;
+        case 'total':
+          compare = a.totalCount - b.totalCount;
+          break;
+        case 'unresolved':
+          compare = a.unresolvedCount - b.unresolvedCount;
+          break;
+      }
+      return sortOrder === 'desc' ? -compare : compare;
+    });
+    return sorted;
+  }, [teamStats, rankingType, sortOrder]);
+
+  const handleSort = (type: RankingType) => {
+    if (rankingType === type) {
+      setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc');
+    } else {
+      setRankingType(type);
+      setSortOrder('desc');
+    }
+  };
+
+  const SortIcon = ({ type }: { type: RankingType }) => (
+    <span className="ml-1">
+      {rankingType === type ? (sortOrder === 'asc' ? '↑' : '↓') : '↕'}
+    </span>
+  );
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap gap-2 bg-gray-100 p-1 rounded-lg">
+        {([
+          { key: 'resolved', label: '已解决数量' },
+          { key: 'total', label: '问题单总数' },
+          { key: 'unresolved', label: '未解决数量' }
+        ] as { key: RankingType; label: string }[]).map(item => (
+          <button
+            key={item.key}
+            onClick={() => handleSort(item.key)}
+            className={`px-4 py-2 rounded-md text-sm font-medium ${
+              rankingType === item.key
+                ? 'bg-white shadow-sm text-blue-600'
+                : 'text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            {item.label}<SortIcon type={item.key} />
+          </button>
+        ))}
+      </div>
+
+      <Card>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 w-16">排名</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">开发负责人</th>
+                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 cursor-pointer hover:bg-gray-100" onClick={() => handleSort('total')}>
+                  问题单总数<SortIcon type="total" />
+                </th>
+                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 cursor-pointer hover:bg-gray-100" onClick={() => handleSort('resolved')}>
+                  已解决<SortIcon type="resolved" />
+                </th>
+                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 cursor-pointer hover:bg-gray-100" onClick={() => handleSort('unresolved')}>
+                  未解决<SortIcon type="unresolved" />
+                </th>
+                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500">严重遗留</th>
+                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 w-24">操作</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {sortedTeamStats.map((member, index) => (
+                <tr key={member.assignee} className="hover:bg-gray-50">
+                  <td className="px-4 py-3 text-center">
+                    <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${
+                      index === 0 ? 'bg-yellow-100 text-yellow-800' :
+                      index === 1 ? 'bg-gray-100 text-gray-800' :
+                      index === 2 ? 'bg-orange-100 text-orange-800' :
+                      'bg-blue-50 text-blue-800'
+                    }`}>
+                      {index + 1}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-sm font-medium text-gray-900">{member.assignee}</td>
+                  <td className="px-4 py-3 text-center text-sm">{member.totalCount}</td>
+                  <td className="px-4 py-3 text-center">
+                    <span className="text-green-600 font-medium">{member.resolvedCount}</span>
+                  </td>
+                  <td className="px-4 py-3 text-center text-sm">{member.unresolvedCount}</td>
+                  <td className="px-4 py-3 text-center">
+                    {member.urgentCount > 0 ? (
+                      <span className="px-2 py-1 text-xs rounded bg-red-100 text-red-800">{member.urgentCount}</span>
+                    ) : (
+                      <span className="text-gray-400">-</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <button
+                      onClick={() => onViewDetail(member.assignee)}
+                      className="text-blue-600 hover:text-blue-800 text-sm"
+                    >
+                      查看详情
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </div>
+  );
+};

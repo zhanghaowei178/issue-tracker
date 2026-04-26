@@ -1,0 +1,48 @@
+{
+  "fieldMapping": {
+    "issueId": {
+      "aliases": ["问题单号", "issue_id", "编号", "ID", "bug_id", "task_id"]
+    },
+    "description": {
+      "aliases": ["问题描述", "描述", "title", "summary", "问题"]
+    },
+    "assignee": {
+      "aliases": ["开发负责人", "负责人", "开发", "assignee", "owner", "处理人"]
+    },
+    "createdTime": {
+      "aliases": ["创建时间", "创建日期", "created_at", "createdTime", "日期", "时间"]
+    },
+    "severity": {
+      "aliases": ["严重程度", "优先级", "severity", "priority", "级别", "级别"]
+    },
+    "remark": {
+      "aliases": ["备注", "remark", "notes", "comment", "说明"]
+    },
+    "status": {
+      "aliases": ["状态", "status", "处理状态", "当前状态"]
+    }
+  },
+  "severityLevels": {
+    "urgent": {
+      "values": ["致命", "critical", "fatal", "blocker", "P0"]
+    },
+    "high": {
+      "values": ["严重", "high", "major", "P1"]
+    },
+    "medium": {
+      "values": ["一般", "中", "medium", "normal", "moderate", "P2"]
+    },
+    "low": {
+      "values": ["提示", "低", "low", "minor", "trivial", "P3", "P4"]
+    }
+  },
+  "trackingKeywords": {
+    "values": ["长期跟踪", "暂不处理", "跟踪中", "pending", "deferred", "暂时搁置", "后续处理"]
+  },
+  "urgentThreshold": {
+    "days": 5
+  },
+  "excludeAssignees": {
+    "values": ["测试组", "自动化", "测试人员", "tester", "admin", "管理员"]
+  }
+}
