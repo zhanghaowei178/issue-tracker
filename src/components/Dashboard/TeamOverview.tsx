@@ -2,10 +2,11 @@ import React, { useState, useMemo } from 'react';
 import { Issue, SortField, SortOrder, Severity } from '../../types';
 import { Card } from '../common';
 import { getDaysElapsed } from '../../utils/dataProcessor';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 interface TeamOverviewProps {
   issues: Issue[];
-  previousResolvedCount: number;
+  previousIssues: Issue[];
 }
 
 const severityOrder: Record<Severity, number> = {
@@ -15,7 +16,7 @@ const severityOrder: Record<Severity, number> = {
   low: 3
 };
 
-export const TeamOverview: React.FC<TeamOverviewProps> = ({ issues, previousResolvedCount }) => {
+export const TeamOverview: React.FC<TeamOverviewProps> = ({ issues, previousIssues }) => {
   const [categoryFilter, setCategoryFilter] = useState<'all' | 'urgent' | 'tracking' | 'normal'>('all');
   const [sortField, setSortField] = useState<SortField>('severity');
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
@@ -23,14 +24,55 @@ export const TeamOverview: React.FC<TeamOverviewProps> = ({ issues, previousReso
   const stats = useMemo(() => {
     const urgent = issues.filter(i => i.category === 'urgent' && i.status !== 'resolved');
     const tracking = issues.filter(i => i.category === 'tracking' && i.status !== 'resolved');
-    const resolved = issues.filter(i => i.status === 'resolved');
+    
+    // 计算对比数据
+    const previousIssueIds = new Set(previousIssues.map(i => i.id));
+    const currentIssueIds = new Set(issues.map(i => i.id));
+    
+    // 新增问题：今天有但昨天没有的
+    const newIssues = Array.from(currentIssueIds).filter(id => !previousIssueIds.has(id)).length;
+    
+    // 已解决问题：昨天有但今天没有的
+    const resolvedIssues = Array.from(previousIssueIds).filter(id => !currentIssueIds.has(id)).length;
+    
     return {
       total: issues.length,
+      previousTotal: previousIssues.length,
       urgent: urgent.length,
       tracking: tracking.length,
-      resolved: resolved.length
+      newIssues,
+      resolvedIssues
     };
-  }, [issues]);
+  }, [issues, previousIssues]);
+
+  // 计算每个人的昨日和今日问题单数量对比
+  const assigneeComparison = useMemo(() => {
+    const currentMap = new Map<string, number>();
+    const previousMap = new Map<string, number>();
+    
+    // 统计今日
+    issues.forEach(issue => {
+      const count = currentMap.get(issue.assignee) || 0;
+      currentMap.set(issue.assignee, count + 1);
+    });
+    
+    // 统计昨日
+    previousIssues.forEach(issue => {
+      const count = previousMap.get(issue.assignee) || 0;
+      previousMap.set(issue.assignee, count + 1);
+    });
+    
+    // 合并数据
+    const allAssignees = new Set([...currentMap.keys(), ...previousMap.keys()]);
+    
+    return Array.from(allAssignees)
+      .map(assignee => ({
+        assignee,
+        current: currentMap.get(assignee) || 0,
+        previous: previousMap.get(assignee) || 0
+      }))
+      .sort((a, b) => b.current - a.current);
+  }, [issues, previousIssues]);
 
   const filteredIssues = useMemo(() => {
     let filtered = issues.filter(i => i.status !== 'resolved');
@@ -77,17 +119,35 @@ export const TeamOverview: React.FC<TeamOverviewProps> = ({ issues, previousReso
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-white">
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+        <Card className="bg-blue-50">
           <div className="text-center">
-            <div className="text-3xl font-bold text-gray-900">{stats.total}</div>
-            <div className="text-sm text-gray-500">问题单总数</div>
+            <div className="text-3xl font-bold text-blue-600">{stats.previousTotal}</div>
+            <div className="text-sm text-blue-500">昨日问题数</div>
+          </div>
+        </Card>
+        <Card className="bg-purple-50">
+          <div className="text-center">
+            <div className="text-3xl font-bold text-purple-600">{stats.total}</div>
+            <div className="text-sm text-purple-500">今日问题数</div>
+          </div>
+        </Card>
+        <Card className="bg-green-50">
+          <div className="text-center">
+            <div className="text-3xl font-bold text-green-600">{stats.resolvedIssues}</div>
+            <div className="text-sm text-green-500">已解决</div>
           </div>
         </Card>
         <Card className="bg-red-50">
           <div className="text-center">
-            <div className="text-3xl font-bold text-red-600">{stats.urgent}</div>
-            <div className="text-sm text-red-500">紧急问题</div>
+            <div className="text-3xl font-bold text-red-600">{stats.newIssues}</div>
+            <div className="text-sm text-red-500">新增</div>
+          </div>
+        </Card>
+        <Card className="bg-orange-50">
+          <div className="text-center">
+            <div className="text-3xl font-bold text-orange-600">{stats.urgent}</div>
+            <div className="text-sm text-orange-500">紧急问题</div>
           </div>
         </Card>
         <Card className="bg-yellow-50">
@@ -96,13 +156,33 @@ export const TeamOverview: React.FC<TeamOverviewProps> = ({ issues, previousReso
             <div className="text-sm text-yellow-500">遗留跟踪</div>
           </div>
         </Card>
-        <Card className="bg-green-50">
-          <div className="text-center">
-            <div className="text-3xl font-bold text-green-600">{previousResolvedCount}→{stats.resolved}</div>
-            <div className="text-sm text-green-500">已解决对比</div>
-          </div>
-        </Card>
       </div>
+
+      {/* 团队成员问题单数量柱状图 */}
+      <Card title="团队成员问题单数量">
+        <div className="h-80">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={assigneeComparison}
+              margin={{ top: 20, right: 30, left: 20, bottom: 40 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis 
+                dataKey="assignee" 
+                angle={-45} 
+                textAnchor="end" 
+                height={60}
+                tick={{ fontSize: 12 }}
+              />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="previous" name="昨日" fill="#3b82f6" />
+              <Bar dataKey="current" name="今日" fill="#a855f7" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </Card>
 
       <Card title="紧急问题看板" className="bg-red-50 border border-red-200">
         <div className="overflow-x-auto">

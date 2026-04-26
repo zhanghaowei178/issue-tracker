@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef } from 'react';
 import { Issue, ViewType } from './types';
 import { useDataClassifier } from './hooks/useDataClassifier';
 import { ExcelImporter } from './components/Import';
@@ -16,7 +16,7 @@ function App() {
   const [importType, setImportType] = useState<'previous' | 'current'>('current');
   const exportRef = useRef<HTMLDivElement>(null);
 
-  const { stats, processedIssues } = useDataClassifier(currentIssues);
+  const { processedIssues } = useDataClassifier(currentIssues);
 
   const handleImport = (issues: Issue[], _date: string) => {
     if (importType === 'previous') {
@@ -30,10 +30,6 @@ function App() {
     setSelectedAssignee(assignee);
     setCurrentView('personal-detail');
   };
-
-  const previousResolvedCount = useMemo(() => {
-    return previousIssues.filter(i => i.status === 'resolved').length;
-  }, [previousIssues]);
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -92,13 +88,13 @@ function App() {
           {currentView === 'team-overview' && (
             <TeamOverview 
               issues={processedIssues} 
-              previousResolvedCount={previousResolvedCount} 
+              previousIssues={previousIssues}
             />
           )}
           {currentView === 'ranking' && (
             <RankingBoard 
               issues={processedIssues} 
-              stats={stats}
+              previousIssues={previousIssues}
               onViewDetail={handleViewDetail} 
             />
           )}
@@ -112,6 +108,7 @@ function App() {
             <PersonalDetail 
               assignee={selectedAssignee} 
               issues={processedIssues.filter(i => i.assignee === selectedAssignee)} 
+              previousIssues={previousIssues.filter(i => i.assignee === selectedAssignee)}
               onBack={() => setCurrentView('team-overview')} 
             />
           )}

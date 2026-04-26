@@ -1,7 +1,7 @@
 import { Issue, Severity, IssueCategory, Config } from '../types';
 import configData from '../config/field-mapping.json';
 
-const cfg: Config = configData as Config;
+export const cfg: Config = configData as Config;
 
 export function findFieldIndex(headers: string[], fieldName: keyof Config['fieldMapping']): number {
   const aliases = cfg.fieldMapping[fieldName]?.aliases || [];

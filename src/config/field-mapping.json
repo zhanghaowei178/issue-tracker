@@ -40,7 +40,7 @@
     "values": ["长期跟踪", "暂不处理", "跟踪中", "pending", "deferred", "暂时搁置", "后续处理"]
   },
   "urgentThreshold": {
-    "days": 5
+    "days": 30
   },
   "excludeAssignees": {
     "values": ["测试组", "自动化", "测试人员", "tester", "admin", "管理员"]

@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { Issue } from '../../types';
-import { findFieldIndex, parseSeverity, parseExcelDate, parseStatus, filterExcludedIssues } from '../../utils/dataProcessor';
+import { parseSeverity, parseExcelDate, parseStatus, filterExcludedIssues, cfg } from '../../utils/dataProcessor';
 import { Button } from '../common';
 import * as XLSX from 'xlsx';
 
@@ -8,6 +8,26 @@ interface ExcelImporterProps {
   isOpen: boolean;
   onClose: () => void;
   onImport: (issues: Issue[], date: string) => void;
+}
+
+// 改进的字段匹配函数
+function findField(headers: string[], fieldName: keyof typeof cfg.fieldMapping): string | undefined {
+  const fieldConfig = cfg.fieldMapping[fieldName];
+  if (!fieldConfig) return undefined;
+  
+  // 按别名长度排序，优先匹配更长的别名
+  const sortedAliases = [...fieldConfig.aliases].sort((a, b) => b.length - a.length);
+  
+  for (const alias of sortedAliases) {
+    const normalizedAlias = alias.toLowerCase();
+    const matchedHeader = headers.find(header => 
+      header.toLowerCase().includes(normalizedAlias)
+    );
+    if (matchedHeader) {
+      return matchedHeader;
+    }
+  }
+  return undefined;
 }
 
 export const ExcelImporter: React.FC<ExcelImporterProps> = ({ isOpen, onClose, onImport }) => {
@@ -39,44 +59,59 @@ export const ExcelImporter: React.FC<ExcelImporterProps> = ({ isOpen, onClose, o
         const workbook = XLSX.read(data, { type: 'binary' });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
+        
+        // 使用默认方式读取为对象数组，更可靠
+        const jsonData = XLSX.utils.sheet_to_json(worksheet) as Record<string, any>[];
 
-        if (jsonData.length < 2) {
+        if (jsonData.length < 1) {
           setError('文件数据格式不正确');
           return;
         }
 
-        const headers = jsonData[0].map(h => String(h || ''));
+        // 获取表头
+        const headers = Object.keys(jsonData[0]);
+        console.log('实际表头:', headers);
         
-        const issueIdIdx = findFieldIndex(headers, 'issueId');
-        const descIdx = findFieldIndex(headers, 'description');
-        const assigneeIdx = findFieldIndex(headers, 'assignee');
-        const createdTimeIdx = findFieldIndex(headers, 'createdTime');
-        const severityIdx = findFieldIndex(headers, 'severity');
-        const remarkIdx = findFieldIndex(headers, 'remark');
-        const statusIdx = findFieldIndex(headers, 'status');
+        // 测试字段匹配
+        const issueIdField = findField(headers, 'issueId');
+        const descField = findField(headers, 'description');
+        const assigneeField = findField(headers, 'assignee');
+        
+        console.log('字段匹配结果:');
+        console.log('issueIdField:', issueIdField);
+        console.log('descField:', descField);
+        console.log('assigneeField:', assigneeField);
+        
+        // 测试第一行数据
+        console.log('第一行数据:', jsonData[0]);
 
-        if (assigneeIdx === -1) {
+        if (!assigneeField) {
           setError('未找到负责人字段');
           return;
         }
 
+        const createdTimeField = findField(headers, 'createdTime');
+        const severityField = findField(headers, 'severity');
+        const remarkField = findField(headers, 'remark');
+        const statusField = findField(headers, 'status');
+
         const issues: Issue[] = [];
         
-        for (let i = 1; i < jsonData.length; i++) {
+        for (let i = 0; i < jsonData.length; i++) {
           const row = jsonData[i];
-          if (!row[assigneeIdx]) continue;
+          if (!row[assigneeField]) continue;
 
           const issue: Issue = {
-            id: issueIdIdx !== -1 ? String(row[issueIdIdx] || `ISSUE-${i}`) : `ISSUE-${i}`,
-            description: descIdx !== -1 ? String(row[descIdx] || '') : '',
-            assignee: String(row[assigneeIdx] || ''),
-            createdTime: createdTimeIdx !== -1 ? parseExcelDate(row[createdTimeIdx]) : new Date(),
-            severity: severityIdx !== -1 ? parseSeverity(row[severityIdx]) : 'medium',
-            remark: remarkIdx !== -1 ? String(row[remarkIdx] || '') : '',
-            status: statusIdx !== -1 ? parseStatus(row[statusIdx]) : 'open'
+            id: issueIdField ? String(row[issueIdField] || `ISSUE-${i}`) : `ISSUE-${i}`,
+            description: descField ? String(row[descField] || '') : '',
+            assignee: String(row[assigneeField] || ''),
+            createdTime: createdTimeField ? parseExcelDate(row[createdTimeField]) : new Date(),
+            severity: severityField ? parseSeverity(row[severityField]) : 'medium',
+            remark: remarkField ? String(row[remarkField] || '') : '',
+            status: statusField ? parseStatus(row[statusField]) : 'open'
           };
 
+          console.log(`第${i}行解析结果:`, issue);
           issues.push(issue);
         }
 
@@ -86,6 +121,7 @@ export const ExcelImporter: React.FC<ExcelImporterProps> = ({ isOpen, onClose, o
         setError('');
         onClose();
       } catch (err) {
+        console.error('解析错误:', err);
         setError('文件解析失败');
       }
     };

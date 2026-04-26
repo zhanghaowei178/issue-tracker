@@ -1,58 +1,33 @@
 import React, { useMemo, useState } from 'react';
-import { Issue, TeamMemberStats, GlobalStats } from '../../types';
+import { Issue } from '../../types';
 import { Card } from '../common';
+import { useRankingData } from '../../hooks/useDataClassifier';
 
 interface RankingBoardProps {
   issues: Issue[];
-  stats: GlobalStats;
+  previousIssues: Issue[];
   onViewDetail: (assignee: string) => void;
 }
 
-type RankingType = 'resolved' | 'new' | 'total' | 'unresolved';
+type RankingType = 'resolvedToday' | 'newToday' | 'total' | 'unresolved' | 'previousCount';
 
-export const RankingBoard: React.FC<RankingBoardProps> = ({ issues, stats: _stats, onViewDetail }) => {
-  const [rankingType, setRankingType] = useState<RankingType>('resolved');
+export const RankingBoard: React.FC<RankingBoardProps> = ({ issues, previousIssues, onViewDetail }) => {
+  const [rankingType, setRankingType] = useState<RankingType>('resolvedToday');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
-  const teamStats = useMemo(() => {
-    const memberMap = new Map<string, TeamMemberStats>();
-    
-    issues.forEach(issue => {
-      const existing = memberMap.get(issue.assignee) || {
-        assignee: issue.assignee,
-        totalCount: 0,
-        resolvedCount: 0,
-        unresolvedCount: 0,
-        urgentCount: 0,
-        trackingCount: 0,
-        normalCount: 0
-      };
-      
-      existing.totalCount++;
-      if (issue.status === 'resolved') {
-        existing.resolvedCount++;
-      } else {
-        existing.unresolvedCount++;
-        if (issue.category === 'urgent') existing.urgentCount++;
-        if (issue.category === 'tracking') existing.trackingCount++;
-        if (issue.category === 'normal') existing.normalCount++;
-      }
-      
-      memberMap.set(issue.assignee, existing);
-    });
-    
-    return Array.from(memberMap.values());
-  }, [issues]);
+  // 使用新的 ranking data hook
+  const rankingData = useRankingData(previousIssues, issues);
 
-  const sortedTeamStats = useMemo(() => {
-    const sorted = [...teamStats].sort((a, b) => {
+  // 排序逻辑
+  const sortedRankingData = useMemo(() => {
+    const sorted = [...rankingData].sort((a, b) => {
       let compare = 0;
       switch (rankingType) {
-        case 'resolved':
-          compare = a.resolvedCount - b.resolvedCount;
+        case 'resolvedToday':
+          compare = a.resolvedToday - b.resolvedToday;
           break;
-        case 'new':
-          compare = (a.totalCount - a.resolvedCount) - (b.totalCount - b.resolvedCount);
+        case 'newToday':
+          compare = a.newToday - b.newToday;
           break;
         case 'total':
           compare = a.totalCount - b.totalCount;
@@ -60,21 +35,26 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ issues, stats: _stat
         case 'unresolved':
           compare = a.unresolvedCount - b.unresolvedCount;
           break;
+        case 'previousCount':
+          compare = a.previousCount - b.previousCount;
+          break;
       }
       return sortOrder === 'desc' ? -compare : compare;
     });
     return sorted;
-  }, [teamStats, rankingType, sortOrder]);
+  }, [rankingData, rankingType, sortOrder]);
 
+  // 处理排序点击
   const handleSort = (type: RankingType) => {
     if (rankingType === type) {
-      setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc');
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
     } else {
       setRankingType(type);
       setSortOrder('desc');
     }
   };
 
+  // 渲染排序图标
   const SortIcon = ({ type }: { type: RankingType }) => (
     <span className="ml-1">
       {rankingType === type ? (sortOrder === 'asc' ? '↑' : '↓') : '↕'}
@@ -85,7 +65,9 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ issues, stats: _stat
     <div className="space-y-6">
       <div className="flex flex-wrap gap-2 bg-gray-100 p-1 rounded-lg">
         {([
-          { key: 'resolved', label: '已解决数量' },
+          { key: 'resolvedToday', label: '今日已解决' },
+          { key: 'newToday', label: '今日新增' },
+          { key: 'previousCount', label: '昨日问题数' },
           { key: 'total', label: '问题单总数' },
           { key: 'unresolved', label: '未解决数量' }
         ] as { key: RankingType; label: string }[]).map(item => (
@@ -110,11 +92,17 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ issues, stats: _stat
               <tr>
                 <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 w-16">排名</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">开发负责人</th>
+                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 cursor-pointer hover:bg-gray-100" onClick={() => handleSort('previousCount')}>
+                  昨日问题数<SortIcon type="previousCount" />
+                </th>
                 <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 cursor-pointer hover:bg-gray-100" onClick={() => handleSort('total')}>
                   问题单总数<SortIcon type="total" />
                 </th>
-                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 cursor-pointer hover:bg-gray-100" onClick={() => handleSort('resolved')}>
-                  已解决<SortIcon type="resolved" />
+                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 cursor-pointer hover:bg-gray-100" onClick={() => handleSort('newToday')}>
+                  今日新增<SortIcon type="newToday" />
+                </th>
+                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 cursor-pointer hover:bg-gray-100" onClick={() => handleSort('resolvedToday')}>
+                  今日已解决<SortIcon type="resolvedToday" />
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 cursor-pointer hover:bg-gray-100" onClick={() => handleSort('unresolved')}>
                   未解决<SortIcon type="unresolved" />
@@ -124,7 +112,7 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ issues, stats: _stat
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {sortedTeamStats.map((member, index) => (
+              {sortedRankingData.map((member, index) => (
                 <tr key={member.assignee} className="hover:bg-gray-50">
                   <td className="px-4 py-3 text-center">
                     <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${
@@ -137,9 +125,17 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ issues, stats: _stat
                     </span>
                   </td>
                   <td className="px-4 py-3 text-sm font-medium text-gray-900">{member.assignee}</td>
+                  <td className="px-4 py-3 text-center text-sm">{member.previousCount}</td>
                   <td className="px-4 py-3 text-center text-sm">{member.totalCount}</td>
                   <td className="px-4 py-3 text-center">
-                    <span className="text-green-600 font-medium">{member.resolvedCount}</span>
+                    <span className="px-2 py-1 text-xs rounded bg-red-100 text-red-800">
+                      +{member.newToday}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <span className="px-2 py-1 text-xs rounded bg-green-100 text-green-800">
+                      {member.resolvedToday}
+                    </span>
                   </td>
                   <td className="px-4 py-3 text-center text-sm">{member.unresolvedCount}</td>
                   <td className="px-4 py-3 text-center">
