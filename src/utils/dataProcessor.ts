@@ -3,6 +3,17 @@ import configData from '../config/field-mapping.json';
 
 export const cfg: Config = configData as Config;
 
+const DEFAULT_EXCLUDE_LIST = ["测试组", "自动化", "测试人员", "tester", "admin", "管理员"];
+let currentExcludeList = DEFAULT_EXCLUDE_LIST;
+
+export function setExcludeList(excludeList: string[]) {
+  currentExcludeList = excludeList;
+}
+
+export function getExcludeList(): string[] {
+  return [...currentExcludeList];
+}
+
 export function findFieldIndex(headers: string[], fieldName: keyof Config['fieldMapping']): number {
   const aliases = cfg.fieldMapping[fieldName]?.aliases || [];
   return headers.findIndex(h => aliases.some(alias => h.toLowerCase().includes(alias.toLowerCase())));
@@ -79,7 +90,7 @@ export function parseStatus(value: string | undefined): 'open' | 'resolved' {
 
 export function isExcludedAssignee(assignee: string): boolean {
   const normalized = assignee.toLowerCase().trim();
-  return cfg.excludeAssignees.values.some((ex: string) => normalized.includes(ex.toLowerCase()));
+  return currentExcludeList.some((ex: string) => normalized.includes(ex.toLowerCase()));
 }
 
 export function classifyAllIssues(issues: Issue[]): Issue[] {

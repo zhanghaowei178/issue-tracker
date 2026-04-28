@@ -25,14 +25,10 @@ export const TeamOverview: React.FC<TeamOverviewProps> = ({ issues, previousIssu
     const urgent = issues.filter(i => i.category === 'urgent' && i.status !== 'resolved');
     const tracking = issues.filter(i => i.category === 'tracking' && i.status !== 'resolved');
     
-    // 计算对比数据
     const previousIssueIds = new Set(previousIssues.map(i => i.id));
     const currentIssueIds = new Set(issues.map(i => i.id));
     
-    // 新增问题：今天有但昨天没有的
     const newIssues = Array.from(currentIssueIds).filter(id => !previousIssueIds.has(id)).length;
-    
-    // 已解决问题：昨天有但今天没有的
     const resolvedIssues = Array.from(previousIssueIds).filter(id => !currentIssueIds.has(id)).length;
     
     return {
@@ -45,24 +41,20 @@ export const TeamOverview: React.FC<TeamOverviewProps> = ({ issues, previousIssu
     };
   }, [issues, previousIssues]);
 
-  // 计算每个人的昨日和今日问题单数量对比
   const assigneeComparison = useMemo(() => {
     const currentMap = new Map<string, number>();
     const previousMap = new Map<string, number>();
     
-    // 统计今日
     issues.forEach(issue => {
       const count = currentMap.get(issue.assignee) || 0;
       currentMap.set(issue.assignee, count + 1);
     });
     
-    // 统计昨日
     previousIssues.forEach(issue => {
       const count = previousMap.get(issue.assignee) || 0;
       previousMap.set(issue.assignee, count + 1);
     });
     
-    // 合并数据
     const allAssignees = new Set([...currentMap.keys(), ...previousMap.keys()]);
     
     return Array.from(allAssignees)
@@ -73,6 +65,8 @@ export const TeamOverview: React.FC<TeamOverviewProps> = ({ issues, previousIssu
       }))
       .sort((a, b) => b.current - a.current);
   }, [issues, previousIssues]);
+
+  const hasPreviousData = previousIssues.length > 0;
 
   const filteredIssues = useMemo(() => {
     let filtered = issues.filter(i => i.status !== 'resolved');
@@ -158,7 +152,6 @@ export const TeamOverview: React.FC<TeamOverviewProps> = ({ issues, previousIssu
         </Card>
       </div>
 
-      {/* 团队成员问题单数量柱状图 */}
       <Card title="团队成员问题单数量">
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
@@ -177,8 +170,22 @@ export const TeamOverview: React.FC<TeamOverviewProps> = ({ issues, previousIssu
               <YAxis />
               <Tooltip />
               <Legend />
-              <Bar dataKey="previous" name="昨日" fill="#3b82f6" />
-              <Bar dataKey="current" name="今日" fill="#a855f7" />
+              {hasPreviousData && (
+                <Bar 
+                  dataKey="previous" 
+                  name="昨日" 
+                  fill="#3b82f6" 
+                  barSize={30}
+                  label={{ position: 'top', fontSize: 12, fill: '#3b82f6' }}
+                />
+              )}
+              <Bar 
+                dataKey="current" 
+                name="今日" 
+                fill="#a855f7" 
+                barSize={30}
+                label={{ position: 'top', fontSize: 12, fill: '#a855f7' }}
+              />
             </BarChart>
           </ResponsiveContainer>
         </div>
