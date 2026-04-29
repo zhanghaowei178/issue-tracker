@@ -94,7 +94,7 @@ export const TeamOverview: React.FC<TeamOverviewProps> = ({
           break;
       }
       return sortOrder === 'asc' ? compare : -compare;
-    };
+    });
     
     return filtered;
   }, [issues, categoryFilter, sortField, sortOrder]);
