@@ -48,7 +48,6 @@ export function classifyIssue(issue: Issue): IssueCategory {
   }
 
   const isTracking = isTrackingIssue(issue.remark);
-  const daysElapsed = getDaysElapsed(issue.createdTime);
 
   if (issue.severity === 'critical' || issue.severity === 'high') {
     return 'urgent';
@@ -56,10 +55,6 @@ export function classifyIssue(issue: Issue): IssueCategory {
 
   if (isTracking) {
     return 'tracking';
-  }
-
-  if (daysElapsed > cfg.urgentThreshold.days) {
-    return 'urgent';
   }
 
   return 'normal';

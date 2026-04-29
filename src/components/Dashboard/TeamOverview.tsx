@@ -7,6 +7,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 interface TeamOverviewProps {
   issues: Issue[];
   previousIssues: Issue[];
+  onViewIssueOverview?: () => void;
+  onViewPersonalBoard?: () => void;
 }
 
 const severityOrder: Record<Severity, number> = {
@@ -16,28 +18,29 @@ const severityOrder: Record<Severity, number> = {
   low: 3
 };
 
-export const TeamOverview: React.FC<TeamOverviewProps> = ({ issues, previousIssues }) => {
+export const TeamOverview: React.FC<TeamOverviewProps> = ({ 
+  issues, 
+  previousIssues,
+  onViewIssueOverview,
+  onViewPersonalBoard
+}) => {
   const [categoryFilter, setCategoryFilter] = useState<'all' | 'urgent' | 'tracking' | 'normal'>('all');
   const [sortField, setSortField] = useState<SortField>('severity');
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
 
   const stats = useMemo(() => {
-    const urgent = issues.filter(i => i.category === 'urgent' && i.status !== 'resolved');
-    const tracking = issues.filter(i => i.category === 'tracking' && i.status !== 'resolved');
-    
     const previousIssueIds = new Set(previousIssues.map(i => i.id));
     const currentIssueIds = new Set(issues.map(i => i.id));
     
     const newIssues = Array.from(currentIssueIds).filter(id => !previousIssueIds.has(id)).length;
     const resolvedIssues = Array.from(previousIssueIds).filter(id => !currentIssueIds.has(id)).length;
+    const unchangedIssues = Array.from(currentIssueIds).filter(id => previousIssueIds.has(id)).length;
     
     return {
       total: issues.length,
-      previousTotal: previousIssues.length,
-      urgent: urgent.length,
-      tracking: tracking.length,
       newIssues,
-      resolvedIssues
+      resolvedIssues,
+      unchangedIssues
     };
   }, [issues, previousIssues]);
 
@@ -91,7 +94,7 @@ export const TeamOverview: React.FC<TeamOverviewProps> = ({ issues, previousIssu
           break;
       }
       return sortOrder === 'asc' ? compare : -compare;
-    });
+    };
     
     return filtered;
   }, [issues, categoryFilter, sortField, sortOrder]);
@@ -113,46 +116,52 @@ export const TeamOverview: React.FC<TeamOverviewProps> = ({ issues, previousIssu
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-        <Card className="bg-blue-50">
-          <div className="text-center">
-            <div className="text-3xl font-bold text-blue-600">{stats.previousTotal}</div>
-            <div className="text-sm text-blue-500">昨日问题数</div>
-          </div>
-        </Card>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="bg-purple-50">
           <div className="text-center">
             <div className="text-3xl font-bold text-purple-600">{stats.total}</div>
-            <div className="text-sm text-purple-500">今日问题数</div>
-          </div>
-        </Card>
-        <Card className="bg-green-50">
-          <div className="text-center">
-            <div className="text-3xl font-bold text-green-600">{stats.resolvedIssues}</div>
-            <div className="text-sm text-green-500">已解决</div>
+            <div className="text-sm text-purple-500">问题单总数</div>
           </div>
         </Card>
         <Card className="bg-red-50">
           <div className="text-center">
             <div className="text-3xl font-bold text-red-600">{stats.newIssues}</div>
-            <div className="text-sm text-red-500">新增</div>
+            <div className="text-sm text-red-500">新增问题数量</div>
           </div>
         </Card>
-        <Card className="bg-orange-50">
+        <Card className="bg-green-50">
           <div className="text-center">
-            <div className="text-3xl font-bold text-orange-600">{stats.urgent}</div>
-            <div className="text-sm text-orange-500">紧急问题</div>
+            <div className="text-3xl font-bold text-green-600">{stats.resolvedIssues}</div>
+            <div className="text-sm text-green-500">解决问题数量</div>
           </div>
         </Card>
-        <Card className="bg-yellow-50">
+        <Card className="bg-blue-50">
           <div className="text-center">
-            <div className="text-3xl font-bold text-yellow-600">{stats.tracking}</div>
-            <div className="text-sm text-yellow-500">遗留跟踪</div>
+            <div className="text-3xl font-bold text-blue-600">{stats.unchangedIssues}</div>
+            <div className="text-sm text-blue-500">未变化问题单数量</div>
           </div>
         </Card>
       </div>
 
       <Card title="团队成员问题单数量">
+        <div className="mb-4 flex gap-3">
+          {onViewIssueOverview && (
+            <button
+              onClick={onViewIssueOverview}
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+            >
+              📋 问题单总览
+            </button>
+          )}
+          {onViewPersonalBoard && (
+            <button
+              onClick={onViewPersonalBoard}
+              className="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-md hover:bg-purple-700"
+            >
+              👤 个人问题单看板
+            </button>
+          )}
+        </div>
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
@@ -200,13 +209,14 @@ export const TeamOverview: React.FC<TeamOverviewProps> = ({ issues, previousIssu
                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">问题描述</th>
                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">开发负责人</th>
                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">严重程度</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">备注</th>
                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">遗留时间</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {issues.filter(i => i.category === 'urgent' && i.status !== 'resolved').length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-4 text-center text-gray-500">暂无紧急问题</td>
+                  <td colSpan={6} className="px-4 py-4 text-center text-gray-500">暂无紧急问题</td>
                 </tr>
               ) : (
                 issues.filter(i => i.category === 'urgent' && i.status !== 'resolved').map(issue => (
@@ -221,6 +231,7 @@ export const TeamOverview: React.FC<TeamOverviewProps> = ({ issues, previousIssu
                         {issue.severity === 'critical' ? '致命' : '严重'}
                       </span>
                     </td>
+                    <td className="px-4 py-2 text-sm text-gray-500">{issue.remark}</td>
                     <td className="px-4 py-2 text-sm">{getDaysElapsed(issue.createdTime)}天</td>
                   </tr>
                 ))
@@ -240,12 +251,13 @@ export const TeamOverview: React.FC<TeamOverviewProps> = ({ issues, previousIssu
                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">开发负责人</th>
                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">严重程度</th>
                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">备注</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">遗留时间</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {issues.filter(i => i.category === 'tracking' && i.status !== 'resolved').length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-4 text-center text-gray-500">暂无遗留跟踪问题</td>
+                  <td colSpan={6} className="px-4 py-4 text-center text-gray-500">暂无遗留跟踪问题</td>
                 </tr>
               ) : (
                 issues.filter(i => i.category === 'tracking' && i.status !== 'resolved').map(issue => (
@@ -255,6 +267,7 @@ export const TeamOverview: React.FC<TeamOverviewProps> = ({ issues, previousIssu
                     <td className="px-4 py-2 text-sm">{issue.assignee}</td>
                     <td className="px-4 py-2 text-sm">{issue.severity}</td>
                     <td className="px-4 py-2 text-sm text-gray-500">{issue.remark}</td>
+                    <td className="px-4 py-2 text-sm">{getDaysElapsed(issue.createdTime)}天</td>
                   </tr>
                 ))
               )}
@@ -288,7 +301,7 @@ export const TeamOverview: React.FC<TeamOverviewProps> = ({ issues, previousIssu
                   className="px-4 py-2 text-left text-xs font-medium text-gray-500 cursor-pointer hover:bg-gray-100"
                   onClick={() => handleSort('severity')}
                 >
-                  严重程度<SortIcon field="severity" />
+                  严重程度< SortIcon field="severity" />
                 </th>
                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">问题单号</th>
                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">问题描述</th>
@@ -296,19 +309,14 @@ export const TeamOverview: React.FC<TeamOverviewProps> = ({ issues, previousIssu
                   className="px-4 py-2 text-left text-xs font-medium text-gray-500 cursor-pointer hover:bg-gray-100"
                   onClick={() => handleSort('assignee')}
                 >
-                  开发负责人<SortIcon field="assignee" />
+                  开发负责人< SortIcon field="assignee" />
                 </th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">备注</th>
                 <th 
                   className="px-4 py-2 text-left text-xs font-medium text-gray-500 cursor-pointer hover:bg-gray-100"
                   onClick={() => handleSort('createdTime')}
                 >
-                  遗留时间<SortIcon field="createdTime" />
-                </th>
-                <th 
-                  className="px-4 py-2 text-left text-xs font-medium text-gray-500 cursor-pointer hover:bg-gray-100"
-                  onClick={() => handleSort('category')}
-                >
-                  分类<SortIcon field="category" />
+                  遗留时间< SortIcon field="createdTime" />
                 </th>
               </tr>
             </thead>
@@ -330,17 +338,8 @@ export const TeamOverview: React.FC<TeamOverviewProps> = ({ issues, previousIssu
                   <td className="px-4 py-2 text-sm">{issue.id}</td>
                   <td className="px-4 py-2 text-sm max-w-xs truncate">{issue.description}</td>
                   <td className="px-4 py-2 text-sm">{issue.assignee}</td>
+                  <td className="px-4 py-2 text-sm text-gray-500">{issue.remark}</td>
                   <td className="px-4 py-2 text-sm">{getDaysElapsed(issue.createdTime)}天</td>
-                  <td className="px-4 py-2 text-sm">
-                    <span className={`px-2 py-1 text-xs rounded ${
-                      issue.category === 'urgent' ? 'bg-red-100 text-red-800' :
-                      issue.category === 'tracking' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-green-100 text-green-800'
-                    }`}>
-                      {issue.category === 'urgent' ? '紧急' :
-                       issue.category === 'tracking' ? '遗留跟踪' : '正常'}
-                    </span>
-                  </td>
                 </tr>
               ))}
             </tbody>
