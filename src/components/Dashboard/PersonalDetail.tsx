@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Issue } from '../../types';
 import { Card } from '../common';
 import { Button } from '../common';
+import { Tooltip } from '../common';
 import { getDaysElapsed } from '../../utils/dataProcessor';
 
 interface PersonalDetailProps {
@@ -15,8 +16,7 @@ export const PersonalDetail: React.FC<PersonalDetailProps> = ({ assignee, issues
   const stats = useMemo(() => {
     const total = issues.length;
     const previousTotal = previousIssues.length;
-    
-    // 计算已解决的问题（昨天有但今天没有的）
+
     const previousIssueIds = new Set(
       previousIssues.filter(i => i.assignee === assignee).map(i => i.id)
     );
@@ -24,15 +24,13 @@ export const PersonalDetail: React.FC<PersonalDetailProps> = ({ assignee, issues
       issues.filter(i => i.assignee === assignee).map(i => i.id)
     );
     const resolvedCount = Array.from(previousIssueIds).filter(id => !currentIssueIds.has(id)).length;
-    
-    // 计算新增的问题（今天有但昨天没有的）
+
     const newCount = Array.from(currentIssueIds).filter(id => !previousIssueIds.has(id)).length;
-    
-    // 计算未解决的问题（今天仍然存在的）
+
     const unresolved = issues.filter(i => i.status !== 'resolved' && i.assignee === assignee);
-    
+
     const tracking = unresolved.filter(i => i.category === 'tracking');
-    
+
     return {
       total,
       previousTotal,
@@ -47,18 +45,17 @@ export const PersonalDetail: React.FC<PersonalDetailProps> = ({ assignee, issues
     return [...issues].sort((a, b) => {
       if (a.status === 'resolved' && b.status !== 'resolved') return 1;
       if (a.status !== 'resolved' && b.status === 'resolved') return -1;
-      
+
       const categoryOrder = { urgent: 0, tracking: 1, normal: 2 };
       const aOrder = categoryOrder[a.category || 'normal'];
       const bOrder = categoryOrder[b.category || 'normal'];
       if (aOrder !== bOrder) return aOrder - bOrder;
-      
+
       const severityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
       return severityOrder[a.severity] - severityOrder[b.severity];
     });
   }, [issues]);
 
-  // 计算问题的状态（新增、已解决、延续）
   const getIssueStatus = (issueId: string) => {
     const previousIssueIds = new Set(
       previousIssues.filter(i => i.assignee === assignee).map(i => i.id)
@@ -66,7 +63,7 @@ export const PersonalDetail: React.FC<PersonalDetailProps> = ({ assignee, issues
     const currentIssueIds = new Set(
       issues.filter(i => i.assignee === assignee).map(i => i.id)
     );
-    
+
     if (currentIssueIds.has(issueId) && previousIssueIds.has(issueId)) {
       return 'continued';
     } else if (currentIssueIds.has(issueId)) {
@@ -146,7 +143,11 @@ export const PersonalDetail: React.FC<PersonalDetailProps> = ({ assignee, issues
                       <td className="px-3 py-2 text-sm">{issue.id}</td>
                       <td className="px-3 py-2 text-sm">{issue.description}</td>
                       <td className="px-3 py-2 text-sm">{issue.severity}</td>
-                      <td className="px-3 py-2 text-sm text-gray-500 max-w-xs truncate">{issue.remark}</td>
+                      <td className="px-3 py-2 text-sm text-gray-500 max-w-xs">
+                        <Tooltip content={issue.remark}>
+                          <span className="block truncate">{issue.remark || '-'}</span>
+                        </Tooltip>
+                      </td>
                     </tr>
                   );
                 })}
@@ -166,8 +167,8 @@ export const PersonalDetail: React.FC<PersonalDetailProps> = ({ assignee, issues
                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">问题单号</th>
                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">问题描述</th>
                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">严重程度</th>
-                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">分类</th>
                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">遗留时间</th>
+                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">备注</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -191,7 +192,11 @@ export const PersonalDetail: React.FC<PersonalDetailProps> = ({ assignee, issues
                       )}
                     </td>
                     <td className="px-3 py-2 text-sm">{issue.id}</td>
-                    <td className="px-3 py-2 text-sm max-w-xs truncate">{issue.description}</td>
+                    <td className="px-3 py-2 text-sm max-w-xs">
+                      <Tooltip content={issue.description}>
+                        <span className="block truncate">{issue.description}</span>
+                      </Tooltip>
+                    </td>
                     <td className="px-3 py-2 text-sm">
                       <span className={`px-2 py-1 text-xs rounded ${
                         issue.severity === 'critical' ? 'bg-red-100 text-red-800' :
@@ -205,17 +210,12 @@ export const PersonalDetail: React.FC<PersonalDetailProps> = ({ assignee, issues
                       </span>
                     </td>
                     <td className="px-3 py-2 text-sm">
-                      <span className={`px-2 py-1 text-xs rounded ${
-                        issue.category === 'urgent' ? 'bg-red-100 text-red-800' :
-                        issue.category === 'tracking' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-green-100 text-green-800'
-                      }`}>
-                        {issue.category === 'urgent' ? '紧急' :
-                         issue.category === 'tracking' ? '遗留跟踪' : '正常'}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2 text-sm">
                       {issue.status === 'resolved' ? '已解决' : `${getDaysElapsed(issue.createdTime)}天`}
+                    </td>
+                    <td className="px-3 py-2 text-sm max-w-xs">
+                      <Tooltip content={issue.remark}>
+                        <span className="block truncate">{issue.remark || '-'}</span>
+                      </Tooltip>
                     </td>
                   </tr>
                 );
