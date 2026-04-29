@@ -23,13 +23,20 @@ export const IssueOverview: React.FC<IssueOverviewProps> = ({ issues, previousIs
   const [categoryFilter, setCategoryFilter] = useState<'all' | 'urgent' | 'tracking' | 'normal'>('all');
 
   const stats = useMemo(() => {
+    const previousIssueIds = new Set(previousIssues.map(i => i.id));
+    const currentIssueIds = new Set(issues.map(i => i.id));
+    
+    const newIssues = Array.from(currentIssueIds).filter(id => !previousIssueIds.has(id)).length;
+    const resolvedIssues = Array.from(previousIssueIds).filter(id => !currentIssueIds.has(id)).length;
+    const unchangedIssues = Array.from(currentIssueIds).filter(id => previousIssueIds.has(id)).length;
+    
     return {
       total: issues.length,
-      urgent: issues.filter(i => i.category === 'urgent' && i.status !== 'resolved').length,
-      tracking: issues.filter(i => i.category === 'tracking' && i.status !== 'resolved').length,
-      normal: issues.filter(i => i.category === 'normal' && i.status !== 'resolved').length,
+      newIssues,
+      resolvedIssues,
+      unchangedIssues
     };
-  }, [issues]);
+  }, [issues, previousIssues]);
 
   const filteredIssues = useMemo(() => {
     let filtered = issues.filter(i => i.status !== 'resolved');
@@ -48,9 +55,6 @@ export const IssueOverview: React.FC<IssueOverviewProps> = ({ issues, previousIs
           break;
         case 'assignee':
           compare = a.assignee.localeCompare(b.assignee);
-          break;
-        case 'category':
-          compare = (a.category || 'normal').localeCompare(b.category || 'normal');
           break;
       }
       return sortOrder === 'asc' ? compare : -compare;
@@ -94,42 +98,50 @@ export const IssueOverview: React.FC<IssueOverviewProps> = ({ issues, previousIs
         </Card>
         <Card className="bg-red-50">
           <div className="text-center">
-            <div className="text-3xl font-bold text-red-600">{stats.urgent}</div>
-            <div className="text-sm text-red-500">紧急问题</div>
-          </div>
-        </Card>
-        <Card className="bg-yellow-50">
-          <div className="text-center">
-            <div className="text-3xl font-bold text-yellow-600">{stats.tracking}</div>
-            <div className="text-sm text-yellow-500">遗留跟踪</div>
+            <div className="text-3xl font-bold text-red-600">{stats.newIssues}</div>
+            <div className="text-sm text-red-500">新增问题数量</div>
           </div>
         </Card>
         <Card className="bg-green-50">
           <div className="text-center">
-            <div className="text-3xl font-bold text-green-600">{stats.normal}</div>
-            <div className="text-sm text-green-500">正常问题</div>
+            <div className="text-3xl font-bold text-green-600">{stats.resolvedIssues}</div>
+            <div className="text-sm text-green-500">解决问题数量</div>
+          </div>
+        </Card>
+        <Card className="bg-blue-50">
+          <div className="text-center">
+            <div className="text-3xl font-bold text-blue-600">{stats.unchangedIssues}</div>
+            <div className="text-sm text-blue-500">未变化问题单数量</div>
           </div>
         </Card>
       </div>
 
       <Card title="问题单总览">
         <div className="flex flex-wrap gap-2 mb-4">
-          {(['all', 'urgent', 'tracking', 'normal'] as const).map(cat => (
-            <button
-              key={cat}
-              onClick={() => setCategoryFilter(cat)}
-              className={`px-3 py-1 text-sm rounded-full ${
-                categoryFilter === cat 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              {cat === 'all' ? `全部 (${stats.total})` : 
-               cat === 'urgent' ? `紧急 (${stats.urgent})` : 
-               cat === 'tracking' ? `遗留跟踪 (${stats.tracking})` : 
-               `正常 (${stats.normal})`}
-            </button>
-          ))}
+          {(['all', 'urgent', 'tracking', 'normal'] as const).map(cat => {
+            let count = 0;
+            if (cat === 'all') {
+              count = filteredIssues.length;
+            } else {
+              count = issues.filter(i => i.category === cat && i.status !== 'resolved').length;
+            }
+            return (
+              <button
+                key={cat}
+                onClick={() => setCategoryFilter(cat)}
+                className={`px-3 py-1 text-sm rounded-full ${
+                  categoryFilter === cat 
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {cat === 'all' ? `全部 (${count})` : 
+                 cat === 'urgent' ? `紧急 (${count})` : 
+                 cat === 'tracking' ? `遗留跟踪 (${count})` : 
+                 `正常 (${count})`}
+              </button>
+            );
+          })}
         </div>
 
         <div className="overflow-x-auto">
@@ -150,25 +162,19 @@ export const IssueOverview: React.FC<IssueOverviewProps> = ({ issues, previousIs
                 >
                   开发负责人<SortIcon field="assignee" />
                 </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">备注</th>
                 <th 
                   className="px-4 py-3 text-left text-xs font-medium text-gray-500 cursor-pointer hover:bg-gray-100"
                   onClick={() => handleSort('createdTime')}
                 >
                   遗留时间<SortIcon field="createdTime" />
                 </th>
-                <th 
-                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 cursor-pointer hover:bg-gray-100"
-                  onClick={() => handleSort('category')}
-                >
-                  分类<SortIcon field="category" />
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">备注</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredIssues.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-gray-500">暂无问题单数据</td>
+                  <td colSpan={6} className="px-4 py-8 text-center text-gray-500">暂无问题单数据</td>
                 </tr>
               ) : (
                 filteredIssues.map(issue => (
@@ -192,22 +198,12 @@ export const IssueOverview: React.FC<IssueOverviewProps> = ({ issues, previousIs
                       </Tooltip>
                     </td>
                     <td className="px-4 py-3 text-sm">{issue.assignee}</td>
-                    <td className="px-4 py-3 text-sm">{getDaysElapsed(issue.createdTime)}天</td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-1 text-xs rounded ${
-                        issue.category === 'urgent' ? 'bg-red-100 text-red-800' :
-                        issue.category === 'tracking' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-green-100 text-green-800'
-                      }`}>
-                        {issue.category === 'urgent' ? '紧急' :
-                         issue.category === 'tracking' ? '遗留跟踪' : '正常'}
-                      </span>
-                    </td>
                     <td className="px-4 py-3 text-sm max-w-xs">
                       <Tooltip content={issue.remark}>
                         <span className="block truncate">{issue.remark || '-'}</span>
                       </Tooltip>
                     </td>
+                    <td className="px-4 py-3 text-sm">{getDaysElapsed(issue.createdTime)}天</td>
                   </tr>
                 ))
               )}
