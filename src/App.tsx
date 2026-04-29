@@ -6,6 +6,7 @@ import { ExportPanel } from './components/Export';
 import { ExcludeConfigPanel } from './components/ExcludeConfigPanel';
 import { Button } from './components/common';
 import { TeamOverview, RankingBoard, ComparisonView, PersonalDetail } from './components/Dashboard';
+import { IssueOverview, PersonalBoard } from './components/Dashboard';
 import { setExcludeList, getExcludeList } from './utils/dataProcessor';
 
 const DEFAULT_EXCLUDE_LIST = ["测试组", "自动化", "测试人员", "tester", "admin", "管理员"];
@@ -58,6 +59,16 @@ function App() {
     setExcludeList(newList);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(newList));
   };
+
+  const handleBackToOverview = () => {
+    setCurrentView('team-overview');
+  };
+
+  const views = [
+    { key: 'team-overview', label: '团队总览' },
+    { key: 'ranking', label: '解单排行榜' },
+    { key: 'comparison', label: '数据对比' }
+  ];
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -114,11 +125,7 @@ function App() {
         </div>
 
         <div className="flex gap-2 mb-6 bg-gray-200 p-1 rounded-lg">
-          {[
-            { key: 'team-overview', label: '团队总览' },
-            { key: 'ranking', label: '解单排行榜' },
-            { key: 'comparison', label: '数据对比' }
-          ].map(item => (
+          {views.map(item => (
             <button
               key={item.key}
               onClick={() => setCurrentView(item.key as ViewType)}
@@ -138,6 +145,8 @@ function App() {
             <TeamOverview 
               issues={processedIssues} 
               previousIssues={previousIssues}
+              onViewIssueOverview={() => setCurrentView('issue-overview')}
+              onViewPersonalBoard={() => setCurrentView('personal-board')}
             />
           )}
           {currentView === 'ranking' && (
@@ -159,6 +168,21 @@ function App() {
               issues={processedIssues.filter(i => i.assignee === selectedAssignee)} 
               previousIssues={previousIssues.filter(i => i.assignee === selectedAssignee)}
               onBack={() => setCurrentView('team-overview')} 
+            />
+          )}
+          {currentView === 'issue-overview' && (
+            <IssueOverview 
+              issues={processedIssues} 
+              previousIssues={previousIssues}
+              onBack={handleBackToOverview}
+            />
+          )}
+          {currentView === 'personal-board' && (
+            <PersonalBoard 
+              issues={processedIssues} 
+              previousIssues={previousIssues}
+              onViewDetail={handleViewDetail}
+              onBack={handleBackToOverview}
             />
           )}
         </div>

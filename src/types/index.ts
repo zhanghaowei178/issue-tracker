@@ -1,6 +1,6 @@
 export type Severity = 'critical' | 'high' | 'medium' | 'low';
 export type IssueCategory = 'urgent' | 'tracking' | 'normal';
-export type ViewType = 'team-overview' | 'ranking' | 'comparison' | 'personal-detail';
+export type ViewType = 'team-overview' | 'ranking' | 'comparison' | 'personal-detail' | 'issue-overview' | 'personal-board';
 
 export interface Issue {
   id: string;
