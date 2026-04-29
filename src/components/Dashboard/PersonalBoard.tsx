@@ -11,11 +11,11 @@ interface PersonalBoardProps {
   onBack: () => void;
 }
 
-export const PersonalBoard: React.FC<PersonalBoardProps> = ({ 
-  issues, 
-  previousIssues, 
+export const PersonalBoard: React.FC<PersonalBoardProps> = ({
+  issues,
+  previousIssues,
   onViewDetail,
-  onBack 
+  onBack
 }) => {
   const [sortField, setSortField] = useState<'totalCount' | 'resolvedCount' | 'newCount'>('totalCount');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
@@ -116,19 +116,19 @@ export const PersonalBoard: React.FC<PersonalBoardProps> = ({
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">开发负责人</th>
-                <th 
+                <th
                   className="px-4 py-3 text-left text-xs font-medium text-gray-500 cursor-pointer hover:bg-gray-100"
                   onClick={() => handleSort('totalCount')}
                 >
                   问题单总数<SortIcon field="totalCount" />
                 </th>
-                <th 
+                <th
                   className="px-4 py-3 text-left text-xs font-medium text-gray-500 cursor-pointer hover:bg-gray-100"
                   onClick={() => handleSort('resolvedCount')}
                 >
                   解单数量<SortIcon field="resolvedCount" />
                 </th>
-                <th 
+                <th
                   className="px-4 py-3 text-left text-xs font-medium text-gray-500 cursor-pointer hover:bg-gray-100"
                   onClick={() => handleSort('newCount')}
                 >
@@ -186,8 +186,8 @@ export const PersonalBoard: React.FC<PersonalBoardProps> = ({
                       </span>
                     </td>
                     <td className="px-4 py-3 text-sm">
-                      <Button 
-                        variant="secondary" 
+                      <Button
+                        variant="secondary"
                         onClick={() => onViewDetail(stat.assignee)}
                         className="text-xs px-2 py-1"
                       >
@@ -210,13 +210,12 @@ export const PersonalBoard: React.FC<PersonalBoardProps> = ({
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">问题单号</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">问题描述</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">严重程度</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">分类</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">遗留时间</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">备注</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {sortedStats.flatMap(stat => 
+              {sortedStats.flatMap(stat =>
                 issues.filter(issue => issue.assignee === stat.assignee).map(issue => (
                   <tr key={issue.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3 text-sm font-medium">{issue.id}</td>
@@ -235,16 +234,6 @@ export const PersonalBoard: React.FC<PersonalBoardProps> = ({
                         {issue.severity === 'critical' ? '致命' :
                          issue.severity === 'high' ? '严重' :
                          issue.severity === 'medium' ? '一般' : '提示'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-1 text-xs rounded ${
-                        issue.category === 'urgent' ? 'bg-red-100 text-red-800' :
-                        issue.category === 'tracking' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-green-100 text-green-800'
-                      }`}>
-                        {issue.category === 'urgent' ? '紧急' :
-                         issue.category === 'tracking' ? '遗留跟踪' : '正常'}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-sm">
