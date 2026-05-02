@@ -32,20 +32,39 @@ function findField(headers: string[], fieldName: keyof typeof cfg.fieldMapping):
 
 export const ExcelImporter: React.FC<ExcelImporterProps> = ({ isOpen, onClose, onImport }) => {
   const [fileName, setFileName] = useState<string>('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [error, setError] = useState<string>('');
 
   const handleFileChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      setSelectedFile(file);
       setFileName(file.name);
       setError('');
     }
   }, []);
 
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const file = e.dataTransfer.files?.[0];
+    if (file && (file.name.endsWith('.xlsx') || file.name.endsWith('.xls'))) {
+      setSelectedFile(file);
+      setFileName(file.name);
+      setError('');
+    } else {
+      setError('请选择.xlsx或.xls格式的文件');
+    }
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
   const handleImport = useCallback(() => {
-    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
-    const file = fileInput?.files?.[0];
+    const file = selectedFile;
     
     if (!file) {
       setError('请选择文件');
@@ -148,7 +167,11 @@ export const ExcelImporter: React.FC<ExcelImporterProps> = ({ isOpen, onClose, o
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">选择Excel文件</label>
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+            <div 
+              className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors"
+              onDrop={handleDrop}
+              onDragOver={handleDragOver}
+            >
               <input
                 type="file"
                 accept=".xlsx,.xls"
