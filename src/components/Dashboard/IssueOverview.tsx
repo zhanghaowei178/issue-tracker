@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { Issue, SortField, SortOrder, Severity } from '../../types';
-import { Card } from '../common';
-import { Tooltip } from '../common';
+import { Table, Tag, Button, Card, Statistic, Row, Col } from 'antd';
+import type { TableProps } from 'antd';
+import { ArrowLeftOutlined } from '@ant-design/icons';
 import { getDaysElapsed } from '../../utils/dataProcessor';
 
 interface IssueOverviewProps {
@@ -17,9 +18,17 @@ const severityOrder: Record<Severity, number> = {
   low: 3
 };
 
+type DataType = {
+  key: string;
+  id: string;
+  description: string;
+  assignee: string;
+  severity: Severity;
+  remark: string;
+  createdTime: Date;
+};
+
 export const IssueOverview: React.FC<IssueOverviewProps> = ({ issues, previousIssues, onBack }) => {
-  const [sortField, setSortField] = useState<SortField>('createdTime');
-  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [categoryFilter, setCategoryFilter] = useState<'all' | 'urgent' | 'tracking' | 'normal'>('all');
 
   const stats = useMemo(() => {
@@ -43,78 +52,119 @@ export const IssueOverview: React.FC<IssueOverviewProps> = ({ issues, previousIs
     if (categoryFilter !== 'all') {
       filtered = filtered.filter(i => i.category === categoryFilter);
     }
-
-    filtered.sort((a, b) => {
-      let compare = 0;
-      switch (sortField) {
-        case 'severity':
-          compare = severityOrder[a.severity] - severityOrder[b.severity];
-          break;
-        case 'createdTime':
-          compare = getDaysElapsed(a.createdTime) - getDaysElapsed(b.createdTime);
-          break;
-        case 'assignee':
-          compare = a.assignee.localeCompare(b.assignee);
-          break;
-      }
-      return sortOrder === 'asc' ? compare : -compare;
-    });
-
     return filtered;
-  }, [issues, categoryFilter, sortField, sortOrder]);
+  }, [issues, categoryFilter]);
 
-  const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortOrder('desc');
-    }
+  const dataSource = useMemo(() => {
+    return filteredIssues.map(issue => ({
+      key: issue.id,
+      id: issue.id,
+      description: issue.description,
+      assignee: issue.assignee,
+      severity: issue.severity,
+      remark: issue.remark,
+      createdTime: issue.createdTime
+    }));
+  }, [filteredIssues]);
+
+  const getSeverityTag = (severity: Severity) => {
+    const colorMap = {
+      critical: 'red',
+      high: 'orange',
+      medium: 'gold',
+      low: 'green'
+    };
+    const labelMap = {
+      critical: '致命',
+      high: '严重',
+      medium: '一般',
+      low: '提示'
+    };
+    return <Tag color={colorMap[severity]}>{labelMap[severity]}</Tag>;
   };
 
-  const SortIcon = ({ field }: { field: SortField }) => (
-    <span className="ml-1">
-      {sortField === field ? (sortOrder === 'asc' ? '↑' : '↓') : '↕'}
-    </span>
-  );
+  const columns: TableProps<DataType>['columns'] = [
+    {
+      title: '严重程度',
+      dataIndex: 'severity',
+      key: 'severity',
+      width: 100,
+      render: (severity: Severity) => getSeverityTag(severity),
+      sorter: (a, b) => severityOrder[a.severity] - severityOrder[b.severity]
+    },
+    {
+      title: '问题单号',
+      dataIndex: 'id',
+      key: 'id',
+      width: 120
+    },
+    {
+      title: '问题描述',
+      dataIndex: 'description',
+      key: 'description',
+      ellipsis: {
+        showTitle: true
+      },
+      sorter: (a, b) => a.description.localeCompare(b.description)
+    },
+    {
+      title: '开发负责人',
+      dataIndex: 'assignee',
+      key: 'assignee',
+      width: 120,
+      sorter: (a, b) => a.assignee.localeCompare(b.assignee)
+    },
+    {
+      title: '备注',
+      dataIndex: 'remark',
+      key: 'remark',
+      ellipsis: {
+        showTitle: true
+      }
+    },
+    {
+      title: '遗留时间',
+      dataIndex: 'createdTime',
+      key: 'createdTime',
+      width: 100,
+      render: (createdTime: Date) => `${getDaysElapsed(createdTime)}天`,
+      sorter: (a, b) => getDaysElapsed(a.createdTime) - getDaysElapsed(b.createdTime)
+    }
+  ];
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <button
+        <Button
           onClick={onBack}
-          className="px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100"
+          icon={<ArrowLeftOutlined />}
         >
-          ← 返回团队总览
-        </button>
+          返回团队总览
+        </Button>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-purple-50">
-          <div className="text-center">
-            <div className="text-3xl font-bold text-purple-600">{stats.total}</div>
-            <div className="text-sm text-purple-500">问题单总数</div>
-          </div>
-        </Card>
-        <Card className="bg-red-50">
-          <div className="text-center">
-            <div className="text-3xl font-bold text-red-600">{stats.newIssues}</div>
-            <div className="text-sm text-red-500">新增问题数量</div>
-          </div>
-        </Card>
-        <Card className="bg-green-50">
-          <div className="text-center">
-            <div className="text-3xl font-bold text-green-600">{stats.resolvedIssues}</div>
-            <div className="text-sm text-green-500">解决问题数量</div>
-          </div>
-        </Card>
-        <Card className="bg-blue-50">
-          <div className="text-center">
-            <div className="text-3xl font-bold text-blue-600">{stats.unchangedIssues}</div>
-            <div className="text-sm text-blue-500">未变化问题单数量</div>
-          </div>
-        </Card>
-      </div>
+      <Row gutter={16}>
+        <Col span={6}>
+          <Card className="bg-purple-50">
+            <Statistic title="问题单总数" value={stats.total} prefix="📋" />
+          </Card>
+        </Col>
+        <Col span={6}>
+          <Card className="bg-red-50">
+            <Statistic title="新增问题数量" value={stats.newIssues} prefix="+" />
+          </Card>
+        </Col>
+        <Col span={6}>
+          <Card className="bg-green-50">
+            <Statistic title="解决问题数量" value={stats.resolvedIssues} prefix="✓" />
+          </Card>
+        </Col>
+        <Col span={6}>
+          <Card className="bg-blue-50">
+            <Statistic title="未变化问题单数量" value={stats.unchangedIssues} prefix="→" />
+          </Card>
+        </Col>
+      </Row>
 
       <Card title="问题单总览">
         <div className="flex flex-wrap gap-2 mb-4">
@@ -126,90 +176,26 @@ export const IssueOverview: React.FC<IssueOverviewProps> = ({ issues, previousIs
               count = issues.filter(i => i.category === cat && i.status !== 'resolved').length;
             }
             return (
-              <button
+              <Button
                 key={cat}
+                type={categoryFilter === cat ? 'primary' : 'default'}
                 onClick={() => setCategoryFilter(cat)}
-                className={`px-3 py-1 text-sm rounded-full ${
-                  categoryFilter === cat
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
               >
                 {cat === 'all' ? `全部 (${count})` :
                  cat === 'urgent' ? `紧急 (${count})` :
                  cat === 'tracking' ? `遗留跟踪 (${count})` :
                  `正常 (${count})`}
-              </button>
+              </Button>
             );
           })}
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th
-                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 cursor-pointer hover:bg-gray-100"
-                  onClick={() => handleSort('severity')}
-                >
-                  严重程度<SortIcon field="severity" />
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">问题单号</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">问题描述</th>
-                <th
-                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 cursor-pointer hover:bg-gray-100"
-                  onClick={() => handleSort('assignee')}
-                >
-                  开发负责人<SortIcon field="assignee" />
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">备注</th>
-                <th
-                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 cursor-pointer hover:bg-gray-100"
-                  onClick={() => handleSort('createdTime')}
-                >
-                  遗留时间<SortIcon field="createdTime" />
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredIssues.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-gray-500">暂无问题单数据</td>
-                </tr>
-              ) : (
-                filteredIssues.map(issue => (
-                  <tr key={issue.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-1 text-xs rounded ${
-                        issue.severity === 'critical' ? 'bg-red-100 text-red-800' :
-                        issue.severity === 'high' ? 'bg-orange-100 text-orange-800' :
-                        issue.severity === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-green-100 text-green-800'
-                      }`}>
-                        {issue.severity === 'critical' ? '致命' :
-                         issue.severity === 'high' ? '严重' :
-                         issue.severity === 'medium' ? '一般' : '提示'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-sm font-medium">{issue.id}</td>
-                    <td className="px-4 py-3 text-sm" style={{ maxWidth: '300px' }}>
-                      <Tooltip content={issue.description}>
-                        <span className="block truncate">{issue.description}</span>
-                      </Tooltip>
-                    </td>
-                    <td className="px-4 py-3 text-sm">{issue.assignee}</td>
-                    <td className="px-4 py-3 text-sm" style={{ maxWidth: '300px' }}>
-                      <Tooltip content={issue.remark}>
-                        <span className="block truncate">{issue.remark || '-'}</span>
-                      </Tooltip>
-                    </td>
-                    <td className="px-4 py-3 text-sm">{getDaysElapsed(issue.createdTime)}天</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+        <Table
+          dataSource={dataSource}
+          columns={columns}
+          pagination={{ pageSize: 10 }}
+          scroll={{ x: 'max-content' }}
+        />
       </Card>
     </div>
   );

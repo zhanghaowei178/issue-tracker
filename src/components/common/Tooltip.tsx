@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { Tooltip as AntTooltip } from 'antd';
 
 interface TooltipProps {
   content: string;
@@ -7,28 +8,17 @@ interface TooltipProps {
 }
 
 export const Tooltip: React.FC<TooltipProps> = ({ content, children, className = '' }) => {
-  const [showTooltip, setShowTooltip] = useState(false);
-
   if (!content) {
     return <>{children}</>;
   }
 
   return (
-    <div
-      className={`relative inline-block ${className}`}
-      onMouseEnter={() => setShowTooltip(true)}
-      onMouseLeave={() => setShowTooltip(false)}
+    <AntTooltip
+      title={content}
+      placement="top"
+      overlayStyle={{ maxWidth: '500px' }}
     >
-      {children}
-      {showTooltip && (
-        <div
-          className="absolute z-50 bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 text-sm text-white bg-gray-800 rounded-lg shadow-lg"
-          style={{ maxWidth: '500px', whiteSpace: 'normal', wordBreak: 'break-word' }}
-        >
-          {content}
-          <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
-        </div>
-      )}
-    </div>
+      <div className={className}>{children}</div>
+    </AntTooltip>
   );
 };
