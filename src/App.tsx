@@ -7,9 +7,8 @@ import { ExcludeConfigPanel } from './components/ExcludeConfigPanel';
 import { Button } from './components/common';
 import { TeamOverview, RankingBoard, ComparisonView, PersonalDetail } from './components/Dashboard';
 import { IssueOverview, PersonalBoard } from './components/Dashboard';
-import { setExcludeList, getExcludeList } from './utils/dataProcessor';
+import { setExcludeList, getExcludeList, cfg } from './utils/dataProcessor';
 
-const DEFAULT_EXCLUDE_LIST = ["测试组", "自动化", "测试人员", "tester", "admin", "管理员"];
 const STORAGE_KEY = 'issue-tracker-exclude-list';
 
 function App() {
@@ -21,8 +20,12 @@ function App() {
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [selectedAssignee, setSelectedAssignee] = useState<string | null>(null);
   const [importType, setImportType] = useState<'previous' | 'current'>('current');
-  const [excludeList, setExcludeListState] = useState<string[]>(DEFAULT_EXCLUDE_LIST);
+  const [excludeList, setExcludeListState] = useState<string[]>(cfg.excludeAssignees?.values || []);
   const exportRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setExcludeList(cfg.excludeAssignees?.values || []);
+  }, []);
 
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -202,7 +205,7 @@ function App() {
         isOpen={isConfigOpen} 
         onClose={() => setIsConfigOpen(false)} 
         onSave={handleSaveConfig} 
-        defaultExcludeList={excludeList} 
+        defaultExcludeList={cfg.excludeAssignees?.values || []}
       />
     </div>
   );
