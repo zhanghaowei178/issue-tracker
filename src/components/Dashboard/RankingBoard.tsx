@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { Issue, Severity } from '../../types';
+import React, { useMemo } from 'react';
+import { Issue } from '../../types';
 import { Card, Table, Tag, Button } from 'antd';
 import type { TableProps } from 'antd';
 import { ArrowLeftOutlined } from '@ant-design/icons';
@@ -28,9 +28,6 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({
   onBack,
   onViewDetail
 }) => {
-  const [sortField, setSortField] = useState<keyof DataType>('todayCount');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-
   const rankingData = useMemo(() => {
     const currentMap = new Map<string, { total: number; urgent: number; tracking: number }>();
     const previousMap = new Map<string, number>();
@@ -68,21 +65,8 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({
         urgentCount: current?.urgent || 0,
         trackingCount: current?.tracking || 0
       };
-    }).sort((a, b) => {
-      const aVal = a[sortField];
-      const bVal = b[sortField];
-      return sortOrder === 'asc' ? (aVal - bVal) : (bVal - aVal);
-    });
-  }, [issues, previousIssues, sortField, sortOrder]);
-
-  const handleSort = (field: keyof DataType) => {
-    if (sortField === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortOrder('desc');
-    }
-  };
+    }).sort((a, b) => b.todayCount - a.todayCount);
+  }, [issues, previousIssues]);
 
   const columns: TableProps<DataType>['columns'] = [
     {

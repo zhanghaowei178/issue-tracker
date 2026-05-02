@@ -7,7 +7,7 @@ import { ExcludeConfigPanel } from './components/ExcludeConfigPanel';
 import { Button } from './components/common';
 import { TeamOverview, RankingBoard, ComparisonView, PersonalDetail } from './components/Dashboard';
 import { IssueOverview, PersonalBoard } from './components/Dashboard';
-import { setExcludeList, getExcludeList, cfg } from './utils/dataProcessor';
+import { setExcludeList, cfg } from './utils/dataProcessor';
 
 const STORAGE_KEY = 'issue-tracker-exclude-list';
 
@@ -156,7 +156,8 @@ function App() {
             <RankingBoard 
               issues={processedIssues} 
               previousIssues={previousIssues}
-              onViewDetail={handleViewDetail} 
+              onViewDetail={handleViewDetail}
+              onBack={() => setCurrentView('team-overview')}
             />
           )}
           {currentView === 'comparison' && (

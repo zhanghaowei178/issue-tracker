@@ -20,7 +20,7 @@ type DataType = {
   createdTime: Date;
   remark: string;
   status: string;
-  comparison: 'new' | 'resolved' | 'unchanged';
+  comparison: string;
 };
 
 export const PersonalDetail: React.FC<PersonalDetailProps> = ({
@@ -90,7 +90,7 @@ export const PersonalDetail: React.FC<PersonalDetailProps> = ({
       title: '对比状态',
       dataIndex: 'comparison',
       key: 'comparison',
-      width: 100,
+      width: 90,
       render: (comp: 'new' | 'resolved' | 'unchanged') => {
         const colorMap = {
           new: 'red',
@@ -109,38 +109,40 @@ export const PersonalDetail: React.FC<PersonalDetailProps> = ({
       title: '状态',
       dataIndex: 'status',
       key: 'status',
-      width: 80
+      width: 70
     },
     {
       title: '问题单号',
       dataIndex: 'id',
       key: 'id',
-      width: 120
+      width: 110
     },
     {
       title: '问题描述',
       dataIndex: 'description',
       key: 'description',
+      width: 250,
       ellipsis: { showTitle: true }
     },
     {
       title: '严重程度',
       dataIndex: 'severity',
       key: 'severity',
-      width: 100,
+      width: 90,
       render: (severity: Severity) => getSeverityTag(severity)
     },
     {
       title: '遗留时间',
       dataIndex: 'createdTime',
       key: 'createdTime',
-      width: 100,
+      width: 80,
       render: (createdTime: Date) => `${getDaysElapsed(createdTime)}天`
     },
     {
       title: '备注',
       dataIndex: 'remark',
       key: 'remark',
+      width: 250,
       ellipsis: { showTitle: true }
     }
   ];
@@ -197,7 +199,6 @@ export const PersonalDetail: React.FC<PersonalDetailProps> = ({
           dataSource={dataSource}
           columns={columns}
           pagination={{ pageSize: 10 }}
-          scroll={{ x: 'max-content' }}
         />
       </Card>
     </div>

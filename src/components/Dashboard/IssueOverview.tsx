@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Issue, SortField, SortOrder, Severity } from '../../types';
+import { Issue, Severity } from '../../types';
 import { Table, Tag, Button, Card, Statistic, Row, Col } from 'antd';
 import type { TableProps } from 'antd';
 import { ArrowLeftOutlined } from '@ant-design/icons';
