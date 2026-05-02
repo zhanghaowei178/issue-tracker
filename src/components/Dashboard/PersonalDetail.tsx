@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Issue, Severity } from '../../types';
 import { Card, Table, Tag, Button, Row, Col, Statistic, Tooltip } from 'antd';
 import type { TableProps } from 'antd';
@@ -21,6 +21,7 @@ type DataType = {
   remark: string;
   status: string;
   comparison: string;
+  link?: string;
 };
 
 export const PersonalDetail: React.FC<PersonalDetailProps> = ({
@@ -29,6 +30,7 @@ export const PersonalDetail: React.FC<PersonalDetailProps> = ({
   previousIssues,
   onBack
 }) => {
+  const [view, setView] = useState<'today' | 'yesterday' | 'new' | 'resolved' | 'urgent' | 'tracking'>('today');
   const currentIssues = useMemo(() => issues.filter(i => i.assignee === assignee), [issues, assignee]);
   const prevIssues = useMemo(() => previousIssues.filter(i => i.assignee === assignee), [previousIssues, assignee]);
 
@@ -56,18 +58,56 @@ export const PersonalDetail: React.FC<PersonalDetailProps> = ({
 
   const dataSource = useMemo(() => {
     const prevIds = new Set(prevIssues.map(i => i.id));
+    const currentIds = new Set(currentIssues.map(i => i.id));
 
-    return currentIssues.map(issue => ({
-      key: issue.id,
-      id: issue.id,
-      description: issue.description,
-      severity: issue.severity,
-      createdTime: issue.createdTime,
-      remark: issue.remark,
-      status: issue.status,
-      comparison: prevIds.has(issue.id) ? 'unchanged' : 'new'
-    }));
-  }, [currentIssues, prevIssues]);
+    let displayIssues: Issue[] = [];
+
+    switch (view) {
+      case 'today':
+        displayIssues = currentIssues;
+        break;
+      case 'yesterday':
+        displayIssues = prevIssues;
+        break;
+      case 'new':
+        displayIssues = currentIssues.filter(i => !prevIds.has(i.id));
+        break;
+      case 'resolved':
+        displayIssues = prevIssues.filter(i => !currentIds.has(i.id));
+        break;
+      case 'urgent':
+        displayIssues = currentIssues.filter(i => i.category === 'urgent');
+        break;
+      case 'tracking':
+        displayIssues = currentIssues.filter(i => i.category === 'tracking');
+        break;
+    }
+
+    return displayIssues.map(issue => {
+      let comparison: string;
+      if (view === 'resolved') {
+        comparison = 'resolved';
+      } else if (view === 'new') {
+        comparison = 'new';
+      } else if (view === 'yesterday') {
+        comparison = currentIds.has(issue.id) ? 'unchanged' : 'resolved';
+      } else {
+        comparison = prevIds.has(issue.id) ? 'unchanged' : 'new';
+      }
+
+      return {
+        key: issue.id,
+        id: issue.id,
+        description: issue.description,
+        severity: issue.severity,
+        createdTime: issue.createdTime,
+        remark: issue.remark,
+        status: issue.status,
+        comparison,
+        link: issue.link
+      };
+    });
+  }, [currentIssues, prevIssues, view]);
 
   const getSeverityTag = (severity: Severity) => {
     const colorMap = {
@@ -115,7 +155,14 @@ export const PersonalDetail: React.FC<PersonalDetailProps> = ({
       title: '问题单号',
       dataIndex: 'id',
       key: 'id',
-      width: 110
+      width: 150,
+      render: (id: string, record: DataType) => (
+        record.link ? (
+          <a href={record.link} target="_blank" rel="noopener noreferrer">{id}</a>
+        ) : (
+          <span>{id}</span>
+        )
+      )
     },
     {
       title: '问题描述',
@@ -173,38 +220,56 @@ export const PersonalDetail: React.FC<PersonalDetailProps> = ({
 
       <Row gutter={16}>
         <Col span={4}>
-          <Card className="bg-blue-50">
-            <Statistic title="昨日问题数" value={stats.yesterdayCount} />
+          <Card
+            className={`cursor-pointer transition-all ${view === 'today' ? 'ring-2 ring-purple-500' : 'hover:shadow-md'}`}
+            onClick={() => setView('today')}
+          >
+            <Statistic title={<span className={view === 'today' ? 'font-bold' : ''}>今日问题数</span>} value={stats.todayCount} />
           </Card>
         </Col>
         <Col span={4}>
-          <Card className="bg-purple-50">
-            <Statistic title="今日问题数" value={stats.todayCount} />
+          <Card
+            className={`cursor-pointer transition-all ${view === 'yesterday' ? 'ring-2 ring-blue-500' : 'hover:shadow-md'}`}
+            onClick={() => setView('yesterday')}
+          >
+            <Statistic title={<span className={view === 'yesterday' ? 'font-bold' : ''}>昨日问题数</span>} value={stats.yesterdayCount} />
           </Card>
         </Col>
         <Col span={4}>
-          <Card className="bg-red-50">
-            <Statistic title="新增" value={stats.newCount} />
+          <Card
+            className={`cursor-pointer transition-all ${view === 'new' ? 'ring-2 ring-red-500' : 'hover:shadow-md'}`}
+            onClick={() => setView('new')}
+          >
+            <Statistic title={<span className={view === 'new' ? 'font-bold text-red-600' : ''}>新增</span>} value={stats.newCount} />
           </Card>
         </Col>
         <Col span={4}>
-          <Card className="bg-green-50">
-            <Statistic title="已解决" value={stats.resolvedCount} />
+          <Card
+            className={`cursor-pointer transition-all ${view === 'resolved' ? 'ring-2 ring-green-500' : 'hover:shadow-md'}`}
+            onClick={() => setView('resolved')}
+          >
+            <Statistic title={<span className={view === 'resolved' ? 'font-bold text-green-600' : ''}>已解决</span>} value={stats.resolvedCount} />
           </Card>
         </Col>
         <Col span={4}>
-          <Card className="bg-orange-50">
-            <Statistic title="紧急问题" value={stats.urgentCount} />
+          <Card
+            className={`cursor-pointer transition-all ${view === 'urgent' ? 'ring-2 ring-orange-500' : 'hover:shadow-md'}`}
+            onClick={() => setView('urgent')}
+          >
+            <Statistic title={<span className={view === 'urgent' ? 'font-bold text-orange-600' : ''}>紧急问题</span>} value={stats.urgentCount} />
           </Card>
         </Col>
         <Col span={4}>
-          <Card className="bg-yellow-50">
-            <Statistic title="遗留跟踪" value={stats.trackingCount} />
+          <Card
+            className={`cursor-pointer transition-all ${view === 'tracking' ? 'ring-2 ring-yellow-500' : 'hover:shadow-md'}`}
+            onClick={() => setView('tracking')}
+          >
+            <Statistic title={<span className={view === 'tracking' ? 'font-bold text-yellow-600' : ''}>遗留跟踪</span>} value={stats.trackingCount} />
           </Card>
         </Col>
       </Row>
 
-      <Card title="所有问题单">
+      <Card title={view === 'today' ? '今日问题单' : view === 'yesterday' ? '昨日问题单' : view === 'new' ? '新增问题单' : view === 'resolved' ? '已解决问题单' : view === 'urgent' ? '紧急问题单' : '遗留跟踪问题单'}>
         <Table
           dataSource={dataSource}
           columns={columns}

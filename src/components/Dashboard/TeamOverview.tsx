@@ -97,7 +97,19 @@ export const TeamOverview: React.FC<TeamOverviewProps> = ({
   const hasPreviousData = previousIssues.length > 0;
 
   const columns = [
-    { title: '问题编号', dataIndex: 'id', key: 'id', width: 120 },
+    {
+      title: '问题编号',
+      dataIndex: 'id',
+      key: 'id',
+      width: 150,
+      render: (id: string, record: Issue) => (
+        record.link ? (
+          <a href={record.link} target="_blank" rel="noopener noreferrer">{id}</a>
+        ) : (
+          <span>{id}</span>
+        )
+      )
+    },
     {
       title: '问题描述',
       dataIndex: 'description',

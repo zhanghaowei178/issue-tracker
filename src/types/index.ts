@@ -11,6 +11,7 @@ export interface Issue {
   remark: string;
   status: 'open' | 'resolved';
   category?: IssueCategory;
+  link?: string;
 }
 
 export interface TeamMemberStats {
@@ -58,6 +59,7 @@ export interface Config {
     severity: FieldMapping;
     remark: FieldMapping;
     status?: FieldMapping;
+    link?: FieldMapping;
   };
   severityLevels: {
     urgent: SeverityLevel;

@@ -75,10 +75,10 @@ export const ExcelImporter: React.FC<ExcelImporterProps> = ({ isOpen, onClose, o
     reader.onload = (e) => {
       try {
         const data = e.target?.result;
-        const workbook = XLSX.read(data, { type: 'binary' });
+        const workbook = XLSX.read(data, { type: 'binary', cellLinks: true });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
-        
+
         // 使用默认方式读取为对象数组，更可靠
         const jsonData = XLSX.utils.sheet_to_json(worksheet) as Record<string, any>[];
 
@@ -89,20 +89,11 @@ export const ExcelImporter: React.FC<ExcelImporterProps> = ({ isOpen, onClose, o
 
         // 获取表头
         const headers = Object.keys(jsonData[0]);
-        console.log('实际表头:', headers);
-        
-        // 测试字段匹配
+
+        // 字段匹配
         const issueIdField = findField(headers, 'issueId');
         const descField = findField(headers, 'description');
         const assigneeField = findField(headers, 'assignee');
-        
-        console.log('字段匹配结果:');
-        console.log('issueIdField:', issueIdField);
-        console.log('descField:', descField);
-        console.log('assigneeField:', assigneeField);
-        
-        // 测试第一行数据
-        console.log('第一行数据:', jsonData[0]);
 
         if (!assigneeField) {
           setError('未找到负责人字段');
@@ -114,11 +105,24 @@ export const ExcelImporter: React.FC<ExcelImporterProps> = ({ isOpen, onClose, o
         const remarkField = findField(headers, 'remark');
         const statusField = findField(headers, 'status');
 
+        // 获取链接列的索引
+        const linkColIndex = headers.findIndex(h => h === '链接' || h.toLowerCase() === 'link');
+
         const issues: Issue[] = [];
-        
+
         for (let i = 0; i < jsonData.length; i++) {
           const row = jsonData[i];
           if (!row[assigneeField]) continue;
+
+          // 解析链接 - Excel行号是从1开始的，表头在第1行，数据从第2行开始
+          let link: string | undefined;
+          if (linkColIndex !== -1) {
+            const cellRef = XLSX.utils.encode_cell({ r: i + 1, c: linkColIndex });
+            const cell = worksheet[cellRef];
+            if (cell && cell.l && cell.l.Target) {
+              link = cell.l.Target;
+            }
+          }
 
           const issue: Issue = {
             id: issueIdField ? String(row[issueIdField] || `ISSUE-${i}`) : `ISSUE-${i}`,
@@ -127,10 +131,9 @@ export const ExcelImporter: React.FC<ExcelImporterProps> = ({ isOpen, onClose, o
             createdTime: createdTimeField ? parseExcelDate(row[createdTimeField]) : new Date(),
             severity: severityField ? parseSeverity(row[severityField]) : 'medium',
             remark: remarkField ? String(row[remarkField] || '') : '',
-            status: statusField ? parseStatus(row[statusField]) : 'open'
+            status: statusField ? parseStatus(row[statusField]) : 'open',
+            link
           };
-
-          console.log(`第${i}行解析结果:`, issue);
           issues.push(issue);
         }
 

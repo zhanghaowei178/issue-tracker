@@ -26,6 +26,7 @@ type DataType = {
   severity: Severity;
   remark: string;
   createdTime: Date;
+  link?: string;
 };
 
 export const IssueOverview: React.FC<IssueOverviewProps> = ({ issues, previousIssues, onBack }) => {
@@ -63,7 +64,8 @@ export const IssueOverview: React.FC<IssueOverviewProps> = ({ issues, previousIs
       assignee: issue.assignee,
       severity: issue.severity,
       remark: issue.remark,
-      createdTime: issue.createdTime
+      createdTime: issue.createdTime,
+      link: issue.link
     }));
   }, [filteredIssues]);
 
@@ -96,7 +98,14 @@ export const IssueOverview: React.FC<IssueOverviewProps> = ({ issues, previousIs
       title: '问题单号',
       dataIndex: 'id',
       key: 'id',
-      width: 120
+      width: 150,
+      render: (id: string, record: DataType) => (
+        record.link ? (
+          <a href={record.link} target="_blank" rel="noopener noreferrer">{id}</a>
+        ) : (
+          <span>{id}</span>
+        )
+      )
     },
     {
       title: '问题描述',

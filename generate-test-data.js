@@ -57,6 +57,19 @@ const remarkDetails = [
   '该问题是已知问题，已列入后续迭代计划'
 ];
 
+const links = [
+  'https://www.baidu.com',
+  'https://www.aliyun.com',
+  'https://www.tencent.com',
+  'https://www.huawei.com',
+  'https://www.jd.com',
+  'https://www.taobao.com',
+  'https://www.douyin.com',
+  'https://www.weibo.com',
+  'https://www.163.com',
+  'https://www.sohu.com'
+];
+
 // 生成指定数量的问题单
 function generateIssues(count, startDate, idPrefix = '', startId = 1) {
   const issues = [];
@@ -78,6 +91,7 @@ function generateIssues(count, startDate, idPrefix = '', startId = 1) {
     }
 
     issues.push({
+      '链接': { t: 's', v: '打开', l: { Target: randomItem(links) } },
       '问题单号': `${idPrefix}BUG-${String(i).padStart(3, '0')}`,
       '问题描述': randomItem(descriptions),
       '开发负责人': assignee,
@@ -120,8 +134,35 @@ const todayIssues = [
 
 // 创建工作簿
 function createWorkbook(data, filename) {
-  const worksheet = XLSX.utils.json_to_sheet(data);
   const workbook = XLSX.utils.book_new();
+  const worksheet = XLSX.utils.aoa_to_sheet([
+    ['链接', '问题单号', '问题描述', '开发负责人', '创建时间', '严重程度', '备注']
+  ]);
+
+  // 设置表头的链接样式（如果有的话）
+
+  data.forEach((row, idx) => {
+    const rowIndex = idx + 2; // +2 因为第1行是表头，数据从第2行开始
+
+    // 打开列 - 超链接
+    const link = row['链接'];
+    worksheet[`A${rowIndex}`] = { t: 's', v: '打开' };
+    if (link && typeof link === 'object' && link.l) {
+      worksheet[`A${rowIndex}`].l = link.l;
+    }
+
+    // 其他列
+    worksheet[`B${rowIndex}`] = { t: 's', v: row['问题单号'] };
+    worksheet[`C${rowIndex}`] = { t: 's', v: row['问题描述'] };
+    worksheet[`D${rowIndex}`] = { t: 's', v: row['开发负责人'] };
+    worksheet[`E${rowIndex}`] = { t: 's', v: row['创建时间'] };
+    worksheet[`F${rowIndex}`] = { t: 's', v: row['严重程度'] };
+    worksheet[`G${rowIndex}`] = { t: 's', v: row['备注'] };
+  });
+
+  // 设置范围
+  worksheet['!ref'] = `A1:G${data.length + 1}`;
+
   XLSX.utils.book_append_sheet(workbook, worksheet, '问题单数据');
 
   const outputPath = path.join(process.cwd(), filename);

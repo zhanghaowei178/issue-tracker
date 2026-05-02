@@ -20,6 +20,9 @@
     },
     "status": {
       "aliases": ["状态", "status", "处理状态", "当前状态"]
+    },
+    "link": {
+      "aliases": ["链接", "link", "url", "链接地址"]
     }
   },
   "severityLevels": {

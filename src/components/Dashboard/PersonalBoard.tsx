@@ -218,7 +218,13 @@ export const PersonalBoard: React.FC<PersonalBoardProps> = ({
               {sortedStats.flatMap(stat =>
                 issues.filter(issue => issue.assignee === stat.assignee).map(issue => (
                   <tr key={issue.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm font-medium">{issue.id}</td>
+                    <td className="px-4 py-3 text-sm font-medium">
+                      {issue.link ? (
+                        <a href={issue.link} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800">{issue.id}</a>
+                      ) : (
+                        issue.id
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-sm max-w-xs">
                       <Tooltip content={issue.description}>
                         <span className="block truncate">{issue.description}</span>
