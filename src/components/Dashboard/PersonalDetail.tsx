@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Issue, Severity } from '../../types';
-import { Card, Table, Tag, Button, Row, Col, Statistic } from 'antd';
+import { Card, Table, Tag, Button, Row, Col, Statistic, Tooltip } from 'antd';
 import type { TableProps } from 'antd';
 import { ArrowLeftOutlined } from '@ant-design/icons';
 import { getDaysElapsed } from '../../utils/dataProcessor';
@@ -122,7 +122,12 @@ export const PersonalDetail: React.FC<PersonalDetailProps> = ({
       dataIndex: 'description',
       key: 'description',
       width: 250,
-      ellipsis: { showTitle: true }
+      ellipsis: true,
+      render: (text: string) => (
+        <Tooltip title={text} placement="top" overlayStyle={{ maxWidth: '400px', whiteSpace: 'normal', zIndex: 9999 }} getPopupContainer={() => document.body}>
+          <span className="inline-block w-full truncate">{text}</span>
+        </Tooltip>
+      )
     },
     {
       title: '严重程度',
@@ -143,7 +148,12 @@ export const PersonalDetail: React.FC<PersonalDetailProps> = ({
       dataIndex: 'remark',
       key: 'remark',
       width: 250,
-      ellipsis: { showTitle: true }
+      ellipsis: true,
+      render: (text: string) => (
+        <Tooltip title={text} placement="top" overlayStyle={{ maxWidth: '400px', whiteSpace: 'normal', zIndex: 9999 }} getPopupContainer={() => document.body}>
+          <span className="inline-block w-full truncate">{text}</span>
+        </Tooltip>
+      )
     }
   ];
 

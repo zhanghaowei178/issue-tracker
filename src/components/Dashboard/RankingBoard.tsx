@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Issue } from '../../types';
-import { Card, Table, Tag, Button } from 'antd';
+import { Card, Table, Tag, Button, Tooltip } from 'antd';
 import type { TableProps } from 'antd';
 import { ArrowLeftOutlined } from '@ant-design/icons';
 

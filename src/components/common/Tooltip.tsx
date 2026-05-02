@@ -15,10 +15,11 @@ export const Tooltip: React.FC<TooltipProps> = ({ content, children, className =
   return (
     <AntTooltip
       title={content}
-      placement="top"
-      overlayStyle={{ maxWidth: '500px' }}
+      placement="topLeft"
+      overlayStyle={{ maxWidth: '500px', whiteSpace: 'normal' }}
+      getPopupContainer={(triggerNode) => triggerNode.closest('.ant-table-cell') || triggerNode}
     >
-      <div className={className}>{children}</div>
+      <span className={className}>{children}</span>
     </AntTooltip>
   );
 };

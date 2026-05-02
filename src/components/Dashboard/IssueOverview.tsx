@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Issue, Severity } from '../../types';
-import { Table, Tag, Button, Card, Statistic, Row, Col } from 'antd';
+import { Table, Tag, Button, Card, Statistic, Row, Col, Tooltip } from 'antd';
 import type { TableProps } from 'antd';
 import { ArrowLeftOutlined } from '@ant-design/icons';
 import { getDaysElapsed } from '../../utils/dataProcessor';
@@ -102,9 +102,18 @@ export const IssueOverview: React.FC<IssueOverviewProps> = ({ issues, previousIs
       title: '问题描述',
       dataIndex: 'description',
       key: 'description',
-      ellipsis: {
-        showTitle: true
-      },
+      width: 250,
+      ellipsis: true,
+      render: (text: string) => (
+        <Tooltip
+          title={text}
+          placement="top"
+          overlayStyle={{ maxWidth: '400px', whiteSpace: 'normal', zIndex: 9999 }}
+          getPopupContainer={() => document.body}
+        >
+          <span className="inline-block w-full truncate">{text}</span>
+        </Tooltip>
+      ),
       sorter: (a, b) => a.description.localeCompare(b.description)
     },
     {
@@ -118,9 +127,18 @@ export const IssueOverview: React.FC<IssueOverviewProps> = ({ issues, previousIs
       title: '备注',
       dataIndex: 'remark',
       key: 'remark',
-      ellipsis: {
-        showTitle: true
-      }
+      width: 150,
+      ellipsis: true,
+      render: (text: string) => (
+        <Tooltip
+          title={text}
+          placement="top"
+          overlayStyle={{ maxWidth: '400px', whiteSpace: 'normal', zIndex: 9999 }}
+          getPopupContainer={() => document.body}
+        >
+          <span className="inline-block w-full truncate">{text}</span>
+        </Tooltip>
+      )
     },
     {
       title: '遗留时间',
@@ -193,8 +211,8 @@ export const IssueOverview: React.FC<IssueOverviewProps> = ({ issues, previousIs
         <Table
           dataSource={dataSource}
           columns={columns}
-          pagination={{ pageSize: 10 }}
-          scroll={{ x: 'max-content' }}
+          pagination={false}
+          scroll={{ y: 500 }}
         />
       </Card>
     </div>

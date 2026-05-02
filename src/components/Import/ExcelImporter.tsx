@@ -137,6 +137,7 @@ export const ExcelImporter: React.FC<ExcelImporterProps> = ({ isOpen, onClose, o
         const filteredIssues = filterExcludedIssues(issues);
         onImport(filteredIssues, date);
         setFileName('');
+        setSelectedFile(null);
         setError('');
         onClose();
       } catch (err) {
@@ -145,7 +146,7 @@ export const ExcelImporter: React.FC<ExcelImporterProps> = ({ isOpen, onClose, o
       }
     };
     reader.readAsBinaryString(file);
-  }, [date, onImport, onClose]);
+  }, [date, onImport, onClose, selectedFile]);
 
   if (!isOpen) return null;
 
