@@ -15,10 +15,8 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ issues, previousIssu
   const [rankingType, setRankingType] = useState<RankingType>('resolvedToday');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
-  // 使用新的 ranking data hook
   const rankingData = useRankingData(previousIssues, issues);
 
-  // 排序逻辑
   const sortedRankingData = useMemo(() => {
     const sorted = [...rankingData].sort((a, b) => {
       let compare = 0;
@@ -44,7 +42,6 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ issues, previousIssu
     return sorted;
   }, [rankingData, rankingType, sortOrder]);
 
-  // 处理排序点击
   const handleSort = (type: RankingType) => {
     if (rankingType === type) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -54,7 +51,6 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ issues, previousIssu
     }
   };
 
-  // 渲染排序图标
   const SortIcon = ({ type }: { type: RankingType }) => (
     <span className="ml-1">
       {rankingType === type ? (sortOrder === 'asc' ? '↑' : '↓') : '↕'}
@@ -63,28 +59,6 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ issues, previousIssu
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap gap-2 bg-gray-100 p-1 rounded-lg">
-        {([
-          { key: 'resolvedToday', label: '今日已解决' },
-          { key: 'newToday', label: '今日新增' },
-          { key: 'previousCount', label: '昨日问题数' },
-          { key: 'total', label: '问题单总数' },
-          { key: 'unresolved', label: '未解决数量' }
-        ] as { key: RankingType; label: string }[]).map(item => (
-          <button
-            key={item.key}
-            onClick={() => handleSort(item.key)}
-            className={`px-4 py-2 rounded-md text-sm font-medium ${
-              rankingType === item.key
-                ? 'bg-white shadow-sm text-blue-600'
-                : 'text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            {item.label}<SortIcon type={item.key} />
-          </button>
-        ))}
-      </div>
-
       <Card>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
