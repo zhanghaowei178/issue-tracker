@@ -36,7 +36,8 @@ export function isTrackingIssue(remark: string): boolean {
   return cfg.trackingKeywords.values.some((kw: string) => normalized.includes(kw.toLowerCase()));
 }
 
-export function getDaysElapsed(createdTime: Date): number {
+export function getDaysElapsed(createdTime: Date | undefined): number {
+  if (!createdTime) return 0;
   const now = new Date();
   const diff = now.getTime() - createdTime.getTime();
   return Math.floor(diff / (1000 * 60 * 60 * 24));
