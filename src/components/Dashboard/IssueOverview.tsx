@@ -25,11 +25,11 @@ export const IssueOverview: React.FC<IssueOverviewProps> = ({ issues, previousIs
   const stats = useMemo(() => {
     const previousIssueIds = new Set(previousIssues.map(i => i.id));
     const currentIssueIds = new Set(issues.map(i => i.id));
-    
+
     const newIssues = Array.from(currentIssueIds).filter(id => !previousIssueIds.has(id)).length;
     const resolvedIssues = Array.from(previousIssueIds).filter(id => !currentIssueIds.has(id)).length;
     const unchangedIssues = Array.from(currentIssueIds).filter(id => previousIssueIds.has(id)).length;
-    
+
     return {
       total: issues.length,
       newIssues,
@@ -43,7 +43,7 @@ export const IssueOverview: React.FC<IssueOverviewProps> = ({ issues, previousIs
     if (categoryFilter !== 'all') {
       filtered = filtered.filter(i => i.category === categoryFilter);
     }
-    
+
     filtered.sort((a, b) => {
       let compare = 0;
       switch (sortField) {
@@ -59,7 +59,7 @@ export const IssueOverview: React.FC<IssueOverviewProps> = ({ issues, previousIs
       }
       return sortOrder === 'asc' ? compare : -compare;
     });
-    
+
     return filtered;
   }, [issues, categoryFilter, sortField, sortOrder]);
 
@@ -130,14 +130,14 @@ export const IssueOverview: React.FC<IssueOverviewProps> = ({ issues, previousIs
                 key={cat}
                 onClick={() => setCategoryFilter(cat)}
                 className={`px-3 py-1 text-sm rounded-full ${
-                  categoryFilter === cat 
-                    ? 'bg-blue-600 text-white' 
+                  categoryFilter === cat
+                    ? 'bg-blue-600 text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
-                {cat === 'all' ? `全部 (${count})` : 
-                 cat === 'urgent' ? `紧急 (${count})` : 
-                 cat === 'tracking' ? `遗留跟踪 (${count})` : 
+                {cat === 'all' ? `全部 (${count})` :
+                 cat === 'urgent' ? `紧急 (${count})` :
+                 cat === 'tracking' ? `遗留跟踪 (${count})` :
                  `正常 (${count})`}
               </button>
             );
@@ -148,7 +148,7 @@ export const IssueOverview: React.FC<IssueOverviewProps> = ({ issues, previousIs
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th 
+                <th
                   className="px-4 py-3 text-left text-xs font-medium text-gray-500 cursor-pointer hover:bg-gray-100"
                   onClick={() => handleSort('severity')}
                 >
@@ -156,14 +156,14 @@ export const IssueOverview: React.FC<IssueOverviewProps> = ({ issues, previousIs
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">问题单号</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">问题描述</th>
-                <th 
+                <th
                   className="px-4 py-3 text-left text-xs font-medium text-gray-500 cursor-pointer hover:bg-gray-100"
                   onClick={() => handleSort('assignee')}
                 >
                   开发负责人<SortIcon field="assignee" />
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">备注</th>
-                <th 
+                <th
                   className="px-4 py-3 text-left text-xs font-medium text-gray-500 cursor-pointer hover:bg-gray-100"
                   onClick={() => handleSort('createdTime')}
                 >
@@ -192,13 +192,13 @@ export const IssueOverview: React.FC<IssueOverviewProps> = ({ issues, previousIs
                       </span>
                     </td>
                     <td className="px-4 py-3 text-sm font-medium">{issue.id}</td>
-                    <td className="px-4 py-3 text-sm max-w-xs">
+                    <td className="px-4 py-3 text-sm" style={{ maxWidth: '300px' }}>
                       <Tooltip content={issue.description}>
                         <span className="block truncate">{issue.description}</span>
                       </Tooltip>
                     </td>
                     <td className="px-4 py-3 text-sm">{issue.assignee}</td>
-                    <td className="px-4 py-3 text-sm max-w-xs">
+                    <td className="px-4 py-3 text-sm" style={{ maxWidth: '300px' }}>
                       <Tooltip content={issue.remark}>
                         <span className="block truncate">{issue.remark || '-'}</span>
                       </Tooltip>
