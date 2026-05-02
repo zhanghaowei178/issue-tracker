@@ -3,10 +3,8 @@ import configData from '../config/field-mapping.json';
 
 export const cfg: Config = configData as Config;
 
-const DEFAULT_EXCLUDE_LIST = cfg.excludeAssignees?.values?.length > 0
-  ? cfg.excludeAssignees.values
-  : ["测试组", "自动化", "测试人员", "tester", "admin", "管理员"];
-let currentExcludeList = DEFAULT_EXCLUDE_LIST;
+const DEFAULT_EXCLUDE_LIST: string[] = cfg.excludeAssignees?.values || [];
+let currentExcludeList = [...DEFAULT_EXCLUDE_LIST];
 
 export function setExcludeList(excludeList: string[]) {
   currentExcludeList = excludeList;

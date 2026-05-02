@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Button, Card } from './common';
+import { cfg } from '../utils/dataProcessor';
 
 interface ExcludeConfigPanelProps {
   isOpen: boolean;
@@ -8,13 +9,11 @@ interface ExcludeConfigPanelProps {
   defaultExcludeList: string[];
 }
 
-const DEFAULT_BACKEND_LIST = ["测试组", "自动化", "测试人员", "tester", "admin", "管理员"];
-
-export function ExcludeConfigPanel({ 
-  isOpen, 
-  onClose, 
-  onSave, 
-  defaultExcludeList 
+export function ExcludeConfigPanel({
+  isOpen,
+  onClose,
+  onSave,
+  defaultExcludeList
 }: ExcludeConfigPanelProps) {
   const [jsonInput, setJsonInput] = useState<string>(JSON.stringify(defaultExcludeList, null, 2));
   const [error, setError] = useState<string | null>(null);
@@ -22,7 +21,8 @@ export function ExcludeConfigPanel({
   if (!isOpen) return null;
 
   const handleImportBackend = () => {
-    setJsonInput(JSON.stringify(DEFAULT_BACKEND_LIST, null, 2));
+    const backendList = cfg.excludeAssignees?.values || [];
+    setJsonInput(JSON.stringify(backendList, null, 2));
     setError(null);
   };
 
@@ -64,12 +64,12 @@ export function ExcludeConfigPanel({
               <p className="text-sm text-gray-600 mb-2">
                 请输入屏蔽人员名单（JSON数组格式），系统会自动过滤包含这些关键词的人员问题单。
               </p>
-              <Button 
-                variant="secondary" 
+              <Button
+                variant="secondary"
                 onClick={handleImportBackend}
                 className="mb-2"
               >
-                📋 导入后端人员名单
+                📋 导入配置文件人员名单
               </Button>
               <textarea
                 value={jsonInput}
