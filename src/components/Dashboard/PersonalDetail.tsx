@@ -161,32 +161,32 @@ export const PersonalDetail: React.FC<PersonalDetailProps> = ({
 
       <Row gutter={16}>
         <Col span={4}>
-          <Card>
+          <Card className="bg-blue-50">
             <Statistic title="昨日问题数" value={stats.yesterdayCount} />
           </Card>
         </Col>
         <Col span={4}>
-          <Card>
+          <Card className="bg-purple-50">
             <Statistic title="今日问题数" value={stats.todayCount} />
           </Card>
         </Col>
         <Col span={4}>
-          <Card>
+          <Card className="bg-red-50">
             <Statistic title="新增" value={stats.newCount} />
           </Card>
         </Col>
         <Col span={4}>
-          <Card>
+          <Card className="bg-green-50">
             <Statistic title="已解决" value={stats.resolvedCount} />
           </Card>
         </Col>
         <Col span={4}>
-          <Card>
+          <Card className="bg-orange-50">
             <Statistic title="紧急问题" value={stats.urgentCount} />
           </Card>
         </Col>
         <Col span={4}>
-          <Card>
+          <Card className="bg-yellow-50">
             <Statistic title="遗留跟踪" value={stats.trackingCount} />
           </Card>
         </Col>

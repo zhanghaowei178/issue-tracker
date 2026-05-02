@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Issue, Severity } from '../../types';
 import { Card, Table, Tag, Button } from 'antd';
 import type { TableProps } from 'antd';
-import { ArrowLeftOutlined, EyeOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined } from '@ant-design/icons';
 
 interface RankingBoardProps {
   issues: Issue[];
@@ -149,9 +149,8 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({
       width: 120,
       render: (_: unknown, record: DataType) => (
         <Button
-          type="link"
-          icon={<EyeOutlined />}
           onClick={() => onViewDetail(record.assignee)}
+          className="text-xs px-2 py-1"
         >
           查看详情
         </Button>
