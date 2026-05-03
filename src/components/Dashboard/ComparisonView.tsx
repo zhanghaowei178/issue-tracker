@@ -2,6 +2,8 @@ import React, { useState, useMemo } from 'react';
 import { Issue } from '../../types';
 import { Card } from '../common';
 import { useComparison } from '../../hooks/useDataClassifier';
+import { Row, Col, Modal, Table, Card as AntCard, Tooltip } from 'antd';
+import type { TableColumnsType } from 'antd';
 
 interface ComparisonViewProps {
   previousIssues: Issue[];
@@ -11,10 +13,26 @@ interface ComparisonViewProps {
 type SortField = 'assignee' | 'previousCount' | 'currentCount' | 'newIssues' | 'resolvedIssues' | 'unresolvedIssues' | 'changeTrend';
 type SortOrder = 'asc' | 'desc';
 
+type DataType = {
+  key: string;
+  id: string;
+  description: string;
+  assignee: string;
+  severity: string;
+  createdTime: Date;
+  remark: string;
+  link?: string;
+};
+
 export const ComparisonView: React.FC<ComparisonViewProps> = ({ previousIssues, currentIssues }) => {
   const [sortField, setSortField] = useState<SortField>('resolvedIssues');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
-  
+  const [modalConfig, setModalConfig] = useState<{
+    visible: boolean;
+    title: string;
+    issues: Issue[];
+  }>({ visible: false, title: '', issues: [] });
+
   const comparison = useComparison(previousIssues, currentIssues);
 
   // 排序逻辑
@@ -46,10 +64,97 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ previousIssues, 
     }
   };
 
+  // 处理卡片点击
+  const handleCardClick = (type: 'new' | 'resolved' | 'all') => {
+    const previousIds = new Set(previousIssues.map(i => i.id));
+    const currentIds = new Set(currentIssues.map(i => i.id));
+
+    let issues: Issue[] = [];
+    let title = '';
+
+    if (type === 'new') {
+      issues = currentIssues.filter(i => !previousIds.has(i.id));
+      title = '新增问题列表';
+    } else if (type === 'resolved') {
+      issues = previousIssues.filter(i => !currentIds.has(i.id));
+      title = '已解决问题列表';
+    } else {
+      issues = currentIssues;
+      title = '当前所有问题列表';
+    }
+
+    setModalConfig({ visible: true, title, issues });
+  };
+
+  // 弹窗表格列定义
+  const columns: TableColumnsType<DataType> = [
+    {
+      title: '问题编号',
+      dataIndex: 'id',
+      key: 'id',
+      width: 150,
+      render: (id: string, record: DataType) => (
+        record.link ? (
+          <a href={record.link} target="_blank" rel="noopener noreferrer">{id}</a>
+        ) : (
+          <span>{id}</span>
+        )
+      )
+    },
+    {
+      title: '问题描述',
+      dataIndex: 'description',
+      key: 'description',
+      width: 250,
+      ellipsis: { showTitle: false },
+      render: (description: string) => (
+        <Tooltip placement="topLeft" title={description}>
+          {description}
+        </Tooltip>
+      )
+    },
+    {
+      title: '负责人',
+      dataIndex: 'assignee',
+      key: 'assignee',
+      width: 120,
+      ellipsis: { showTitle: false },
+      render: (assignee: string) => (
+        <Tooltip placement="topLeft" title={assignee}>
+          {assignee}
+        </Tooltip>
+      )
+    },
+    {
+      title: '严重程度',
+      dataIndex: 'severity',
+      key: 'severity',
+      width: 100,
+      ellipsis: { showTitle: false },
+      render: (severity: string) => (
+        <Tooltip placement="topLeft" title={severity}>
+          {severity}
+        </Tooltip>
+      )
+    },
+    {
+      title: '备注',
+      dataIndex: 'remark',
+      key: 'remark',
+      width: 150,
+      ellipsis: { showTitle: false },
+      render: (remark: string) => (
+        <Tooltip placement="topLeft" title={remark}>
+          {remark}
+        </Tooltip>
+      )
+    }
+  ];
+
   // 渲染排序图标
   const renderSortIcon = (field: SortField) => {
     if (sortField !== field) return null;
-    return sortOrder === 'asc' ? '↓' : '↑';
+    return sortOrder === 'asc' ? '↑' : '↓';
   };
 
   if (previousIssues.length === 0 || currentIssues.length === 0) {
@@ -65,48 +170,84 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ previousIssues, 
 
   return (
     <div className="space-y-6">
+      <Row gutter={16}>
+        <Col span={8}>
+          <AntCard className="bg-gradient-to-br from-red-50 to-red-100 cursor-pointer hover:from-red-100 hover:to-red-200 transition-all border border-red-200" onClick={() => handleCardClick('new')}>
+            <div className="flex flex-col items-center">
+              <div className="text-3xl text-red-500 mb-2">📈</div>
+              <div className="text-2xl font-bold text-red-600">
+                {sortedComparison.reduce((sum, item) => sum + item.newIssues, 0)}
+              </div>
+              <div className="text-sm text-red-500 mt-1">新增问题</div>
+            </div>
+          </AntCard>
+        </Col>
+        <Col span={8}>
+          <AntCard className="bg-gradient-to-br from-green-50 to-green-100 cursor-pointer hover:from-green-100 hover:to-green-200 transition-all border border-green-200" onClick={() => handleCardClick('resolved')}>
+            <div className="flex flex-col items-center">
+              <div className="text-3xl text-green-500 mb-2">✅</div>
+              <div className="text-2xl font-bold text-green-600">
+                {sortedComparison.reduce((sum, item) => sum + item.resolvedIssues, 0)}
+              </div>
+              <div className="text-sm text-green-500 mt-1">已解决</div>
+            </div>
+          </AntCard>
+        </Col>
+        <Col span={8}>
+          <AntCard className="bg-gradient-to-br from-purple-50 to-purple-100 cursor-pointer hover:from-purple-100 hover:to-purple-200 transition-all border border-purple-200" onClick={() => handleCardClick('all')}>
+            <div className="flex flex-col items-center">
+              <div className="text-3xl text-purple-500 mb-2">📋</div>
+              <div className="text-2xl font-bold text-purple-600">
+                {sortedComparison.reduce((sum, item) => sum + item.currentCount, 0)}
+              </div>
+              <div className="text-sm text-purple-500 mt-1">当前总问题</div>
+            </div>
+          </AntCard>
+        </Col>
+      </Row>
+
       <Card>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th 
+                <th
                   className="px-4 py-3 text-left text-xs font-medium text-gray-500 cursor-pointer"
                   onClick={() => handleSort('assignee')}
                 >
                   开发负责人 {renderSortIcon('assignee')}
                 </th>
-                <th 
+                <th
                   className="px-4 py-3 text-center text-xs font-medium text-gray-500 cursor-pointer"
                   onClick={() => handleSort('previousCount')}
                 >
                   昨日问题数 {renderSortIcon('previousCount')}
                 </th>
-                <th 
+                <th
                   className="px-4 py-3 text-center text-xs font-medium text-gray-500 cursor-pointer"
                   onClick={() => handleSort('currentCount')}
                 >
                   今日问题数 {renderSortIcon('currentCount')}
                 </th>
-                <th 
+                <th
                   className="px-4 py-3 text-center text-xs font-medium text-gray-500 cursor-pointer"
                   onClick={() => handleSort('newIssues')}
                 >
                   新增问题 {renderSortIcon('newIssues')}
                 </th>
-                <th 
+                <th
                   className="px-4 py-3 text-center text-xs font-medium text-gray-500 cursor-pointer"
                   onClick={() => handleSort('resolvedIssues')}
                 >
                   已解决 {renderSortIcon('resolvedIssues')}
                 </th>
-                <th 
+                <th
                   className="px-4 py-3 text-center text-xs font-medium text-gray-500 cursor-pointer"
                   onClick={() => handleSort('unresolvedIssues')}
                 >
                   未解决 {renderSortIcon('unresolvedIssues')}
                 </th>
-                <th 
+                <th
                   className="px-4 py-3 text-center text-xs font-medium text-gray-500 cursor-pointer"
                   onClick={() => handleSort('changeTrend')}
                 >
@@ -150,32 +291,30 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ previousIssues, 
         </div>
       </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="bg-blue-50">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-blue-600">
-              {sortedComparison.reduce((sum, item) => sum + item.newIssues, 0)}
-            </div>
-            <div className="text-sm text-blue-500">总新增问题</div>
-          </div>
-        </Card>
-        <Card className="bg-green-50">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-green-600">
-              {sortedComparison.reduce((sum, item) => sum + item.resolvedIssues, 0)}
-            </div>
-            <div className="text-sm text-green-500">总已解决</div>
-          </div>
-        </Card>
-        <Card className="bg-gray-50">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-gray-600">
-              {sortedComparison.reduce((sum, item) => sum + item.currentCount, 0)}
-            </div>
-            <div className="text-sm text-gray-500">当前总问题</div>
-          </div>
-        </Card>
-      </div>
+      <Modal
+        title={modalConfig.title}
+        open={modalConfig.visible}
+        onCancel={() => setModalConfig(prev => ({ ...prev, visible: false }))}
+        footer={null}
+        width={1000}
+      >
+        <Table
+          dataSource={modalConfig.issues.map(i => ({
+            key: i.id,
+            id: i.id,
+            description: i.description,
+            assignee: i.assignee,
+            severity: i.severity,
+            createdTime: i.createdTime,
+            remark: i.remark,
+            link: i.link
+          }))}
+          columns={columns}
+          pagination={false}
+          scroll={{ y: 400 }}
+          size="small"
+        />
+      </Modal>
     </div>
   );
 };
